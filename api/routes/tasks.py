@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Literal
+
+import api.dependencies  # noqa: F401 — ensures sys.path patched
+import memory as mem
 
 from api.dependencies import get_current_user
 from api.services.task_service import create_task, update_task, delete_task
@@ -29,6 +32,26 @@ class UpdateTaskRequest(BaseModel):
     nudge_times: Optional[str] = None       # JSON array of HH:MM
     nudge_days: Optional[str] = None        # JSON array of day abbrevs
     nudge_enabled: Optional[int] = None     # 1 = enabled, 0 = disabled
+
+
+@router.get("/tasks")
+def list_tasks_route(
+    status: Optional[Literal["pending", "overdue", "completed", "all"]] = "pending",
+    limit: int = Query(50, ge=1, le=200),
+    goal_id: Optional[str] = None,
+    user_id: str = Depends(get_current_user),
+):
+    """Return tasks filtered by status (and optionally goal_id) for the authenticated user."""
+    return mem.list_tasks(user_id, status=status, limit=limit, goal_id=goal_id)
+
+
+@router.get("/tasks/{task_id}")
+def get_task_route(task_id: str, user_id: str = Depends(get_current_user)):
+    """Fetch a single task with all details."""
+    task = mem.get_task(user_id, task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 
 @router.post("/tasks", status_code=201)

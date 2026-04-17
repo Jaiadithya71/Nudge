@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # sys.path must be patched before any core module imports
 import api.dependencies  # noqa: F401
 
-from api.routes import auth, context, insight, nudges, actions, system, sync, telegram, evaluation, tasks, goals, preferences, push
+from api.routes import auth, context, insight, nudges, actions, system, sync, telegram, evaluation, tasks, goals, preferences, push, search
 
 load_dotenv()
 
@@ -134,6 +134,7 @@ app.include_router(tasks.router,       prefix="/api", tags=["Tasks"])
 app.include_router(goals.router,       prefix="/api", tags=["Goals"])
 app.include_router(preferences.router, prefix="/api", tags=["Preferences"])
 app.include_router(push.router,        prefix="/api", tags=["Push"])
+app.include_router(search.router,      prefix="/api", tags=["Search"])
 
 
 @app.get("/")

@@ -524,6 +524,57 @@ def get_tasks_due_for_nudge(user_id: str, hhmm: str, day_abbrev: str | None = No
         db.close(conn)
 
 
+def list_tasks(
+    user_id: str,
+    status: str = "pending",
+    limit: int = 50,
+    goal_id: str | None = None,
+) -> list[dict]:
+    """Return tasks for user_id, optionally filtered by status and goal_id.
+
+    status="all" returns every task regardless of status.
+    """
+    if not user_id:
+        raise ValueError("user_id is required")
+    conn = db.get_connection(user_id)
+    try:
+        where_parts: list[str] = []
+        params: list[Any] = []
+
+        if status != "all":
+            where_parts.append("status = ?")
+            params.append(status)
+
+        if goal_id is not None:
+            where_parts.append("goal_id = ?")
+            params.append(goal_id)
+
+        where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
+        params.append(limit)
+
+        rows = conn.execute(
+            f"SELECT * FROM tasks {where_sql} ORDER BY created_at DESC LIMIT ?",  # noqa: S608
+            params,
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        db.close(conn)
+
+
+def get_task(user_id: str, task_id: str) -> dict | None:
+    """Fetch a single task by id. Returns None if not found."""
+    if not user_id:
+        raise ValueError("user_id is required")
+    if not task_id:
+        raise ValueError("task_id is required")
+    conn = db.get_connection(user_id)
+    try:
+        row = conn.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        return dict(row) if row else None
+    finally:
+        db.close(conn)
+
+
 def get_overdue_tasks(user_id: str) -> list[dict]:
     """Return all overdue tasks with nudge_message for the nudge engine."""
     if not user_id:

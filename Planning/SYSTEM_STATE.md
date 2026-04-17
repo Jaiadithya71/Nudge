@@ -215,7 +215,32 @@ Collections created per user: `{user_id}_goals`, `{user_id}_tasks`, `{user_id}_c
 
 ---
 
-## 6. Testing Infrastructure
+## 6. MCP Servers (Phase 2.5)
+
+**`mcp_servers/tasks_server/`** — Tasks MCP Server, added 2026-04-17.
+
+Exposes 11 LLM-callable tools over stdio MCP, routing all reads/writes through FastAPI. One process per user; user identity is bound at startup via `NUDGE_JWT` and is not a tool parameter.
+
+| Tool | FastAPI call |
+|------|-------------|
+| `list_tasks` | `GET /api/tasks?status=&limit=` |
+| `get_task` | `GET /api/tasks/{task_id}` |
+| `create_task` | `POST /api/tasks` |
+| `update_task` | `PATCH /api/tasks/{task_id}` |
+| `complete_task` | `PATCH /api/tasks/{task_id}` with `{"status":"completed"}` |
+| `delete_task` | `DELETE /api/tasks/{task_id}` |
+| `find_similar_tasks` | `POST /api/search/tasks` (ChromaDB) |
+| `get_daily_context` | `GET /api/context` (contacts/patterns/alignments stripped) |
+| `tasks_for_goal` | `GET /api/tasks?status=all&goal_id=` |
+| `list_goals` | `GET /api/context` (`.goals` extracted) |
+| `log_action` | `POST /api/log-action` |
+
+Run: `python -m mcp_servers.tasks_server.server` (requires `NUDGE_API_URL` and `NUDGE_JWT`).
+See `mcp_servers/tasks_server/README.md` for Claude Desktop config and troubleshooting.
+
+---
+
+## 7. Testing Infrastructure
 
 | Test | Type | Status |
 |------|------|--------|

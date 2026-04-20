@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Current phase:** Reliable reminder tool. Intelligence layer is in place but simplified. Primary focus is fast task creation, custom nudge messages per task, and trustworthy push delivery.
 
-Tasks and goals are managed exclusively via the dashboard (SQLite). Notion connectors are archived in `input/connectors/_archived/` and `output/_archived/` — not active.
+Tasks and goals are managed exclusively via the dashboard (SQLite). Notion integration was removed.
 
 The system operates per-user with isolated memory, behavior modeling, and decision loops. It is NOT a chatbot or task manager — it's a continuous feedback system.
 
@@ -40,11 +40,8 @@ cd llm_module && python -m pytest tests/
 # Nudge engine tests (in Remind/)
 python -m pytest Remind/test_nudge_engine.py
 
-# API integration tests (requires running server)
-python test_api.py
-
-# Signal/pipeline tests
-python test_signals.py
+# Full API integration tests (requires running server)
+python -m pytest tests/test_full_system.py
 ```
 
 ## Architecture
@@ -91,7 +88,7 @@ The orchestrator runs three scheduled jobs and one on-demand type:
 
 ### Data Flow Between Modules
 
-Memory returns Pydantic `UserContext` models. The orchestrator converts these via `_context_to_llm_dict()` (flat dict for LLM) and `_context_to_nudge_dict()` (JSON-serializable for nudge engine). Each module has its own schema expectations — check the `CONTRACT.md` and `SPEC.md` files in each module directory.
+Memory returns Pydantic `UserContext` models. The orchestrator converts these via `_context_to_llm_dict()` (flat dict for LLM) and `_context_to_nudge_dict()` (JSON-serializable for nudge engine). For inventory of every module, table, and endpoint — see `Planning/SYSTEM_STATE.md`.
 
 ### Rate Limiting
 

@@ -9,7 +9,7 @@ from typing import Any
 
 import yaml
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parent.parent.parent
 _settings: dict = {}
 
 

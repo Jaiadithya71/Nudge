@@ -16,16 +16,16 @@ The system operates per-user with isolated memory, behavior modeling, and decisi
 
 ```bash
 # Full dry-run cycle (mock LLM, demo user)
-python main.py
+python app/main.py
 
 # Real Gemini API mode
-python main.py --real
+python app/main.py --real
 
 # Custom user / skip data sync
-python main.py --user alice --no-seed
+python app/main.py --user alice --no-seed
 
 # Start the FastAPI API server (from Nudge/ root)
-uvicorn api.main:app --reload
+uvicorn --app-dir app api.main:app --reload
 # Docs at http://127.0.0.1:8000/docs
 ```
 
@@ -33,15 +33,15 @@ uvicorn api.main:app --reload
 
 ```bash
 # Module-level tests (each module has its own tests/ directory)
-cd Memory && python -m pytest tests/
-cd Orchestrator && python -m pytest tests/
-cd llm_module && python -m pytest tests/
+cd app/Memory && python -m pytest tests/
+cd app/Orchestrator && python -m pytest tests/
+cd app/llm_module && python -m pytest tests/
 
 # Nudge engine tests (in Remind/)
-python -m pytest Remind/test_nudge_engine.py
+python -m pytest app/Remind/test_nudge_engine.py
 
 # Full API integration tests (requires running server)
-python -m pytest tests/test_full_system.py
+python -m pytest app/tests/test_full_system.py
 ```
 
 ## Architecture
@@ -71,10 +71,10 @@ SQLite → UserContext → LLM → Insight → Nudge Engine → Nudges
 
 ### Module Import System
 
-Modules are NOT installed as packages. Instead, `sys.path` is patched at runtime to make sibling directories importable:
-- `main.py` adds `Memory/`, `llm_module/`, `Remind/`, `Orchestrator/` to `sys.path`
-- `Orchestrator/orchestrator.py` does the same for its sibling dependencies
-- `api/dependencies.py` does the same for the API layer
+Modules are NOT installed as packages. Instead, `sys.path` is patched at runtime to make sibling directories under `app/` importable:
+- `app/main.py` adds `app/Memory/`, `app/llm_module/`, `app/Remind/`, `app/Orchestrator/` to `sys.path`
+- `app/Orchestrator/orchestrator.py` does the same for its sibling dependencies
+- `app/api/dependencies.py` does the same for the API layer
 
 When adding new cross-module imports, follow this pattern.
 

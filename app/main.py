@@ -13,7 +13,7 @@ Usage:
     python main.py --real       # real Gemini API (requires GEMINI_API_KEY in .env)
     python main.py --user alice # specify a custom user ID
 
-Folder layout expected at runtime (relative to this file):
+Folder layout expected at runtime (siblings of this file, under app/):
     Memory/         memory.py, db.py, vector_db.py, models.py, schema.sql
     llm_module/     llm_module/__init__.py, ...
     Remind/         nudge_engine.py

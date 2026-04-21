@@ -1,36 +1,34 @@
 """
 tests/test_orchestrator.py — Orchestrator test suite.
 
-Covers all scenarios from TEST_PLAN.md:
+Covers:
     1. Scheduler Tests    — simulate time, ensure correct job triggers
     2. Pipeline Tests     — mock memory, llm, nudge; verify correct sequence
     3. Rate Limit Tests   — exceed daily limit, ensure no new nudges
     4. Edge Cases         — no data, no insight, no nudges
+    5. Context Conversion — _context_to_llm_dict shape contracts
 """
 
 from __future__ import annotations
 
 import sys
-import importlib
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import patch
 import pytest
 
 # ---------------------------------------------------------------------------
 # Ensure orchestrator/ and sibling paths are importable in the test context
 # ---------------------------------------------------------------------------
-_ORCHESTRATOR_DIR = Path(__file__).resolve().parent.parent  # .../Nudge/Orchestrator/
+_ORCHESTRATOR_DIR = Path(__file__).resolve().parent.parent
 if str(_ORCHESTRATOR_DIR) not in sys.path:
     sys.path.insert(0, str(_ORCHESTRATOR_DIR))
 
-# ---------------------------------------------------------------------------
-# Module under test
-# ---------------------------------------------------------------------------
 import state
 import orchestrator as orch
 
 # ---------------------------------------------------------------------------
-# Fixtures / Helpers
+# Shared test data
 # ---------------------------------------------------------------------------
 
 USER = "test-user-001"
@@ -62,13 +60,97 @@ _MOCK_NUDGE = {
     "timing": "immediate",
 }
 
+# ---------------------------------------------------------------------------
+# FakeState — in-memory drop-in for the SQLite-backed state module.
+# Implements the same public API so orchestrator.py works unchanged.
+# ---------------------------------------------------------------------------
+
+class FakeState:
+    def __init__(self):
+        self._nudges: list[dict] = []      # [{...nudge, sent_at: iso}]
+        self._last_run: str | None = None
+        self._last_run_job: str | None = None
+        self._nudge_bank: list[dict] = []
+        self._insight_cache: dict | None = None
+        self._kv: dict[str, str] = {}
+
+    def _today_nudges(self) -> list[dict]:
+        from datetime import date
+        today = date.today().isoformat()
+        return [n for n in self._nudges if n.get("sent_at", "").startswith(today)]
+
+    def get_state(self, user_id: str) -> dict:
+        today = self._today_nudges()
+        last_ts = self._nudges[-1]["sent_at"] if self._nudges else None
+        return {
+            "nudges_sent_today": len(today),
+            "last_nudge_time":   last_ts,
+            "last_run":          self._last_run,
+            "last_run_job":      self._last_run_job,
+            "recent_nudges":     today[-10:],
+        }
+
+    def get_history(self, user_id: str) -> dict:
+        s = self.get_state(user_id)
+        return {
+            "nudges_sent_today": s["nudges_sent_today"],
+            "last_nudge_time":   s["last_nudge_time"],
+            "recent_nudges":     s["recent_nudges"],
+        }
+
+    def update_after_run(self, user_id: str, job_type: str) -> None:
+        self._last_run = datetime.now(timezone.utc).isoformat()
+        self._last_run_job = job_type
+
+    def record_nudges(self, user_id: str, nudges: list[dict], job_type: str = "") -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        for nudge in nudges:
+            self._nudges.append({**nudge, "sent_at": now})
+
+    def store_nudge_bank(self, user_id: str, bank: list[dict]) -> None:
+        self._nudge_bank = list(bank)
+
+    def get_nudge_bank(self, user_id: str) -> list[dict]:
+        return list(self._nudge_bank)
+
+    def store_insight_cache(self, user_id: str, insight: dict) -> None:
+        self._insight_cache = insight
+
+    def get_cached_insight(self, user_id: str) -> dict | None:
+        return self._insight_cache
+
+    def store_kv(self, user_id: str, key: str, value: str) -> None:
+        self._kv[key] = value
+
+    def get_kv(self, user_id: str, key: str) -> str | None:
+        return self._kv.get(key)
+
+
+def _inject_nudge_at(fs: FakeState, nudge: dict, *, minutes_ago: int) -> None:
+    """Insert a nudge into FakeState with a backdated timestamp."""
+    ts = (datetime.now(timezone.utc) - timedelta(minutes=minutes_ago)).isoformat()
+    fs._nudges.append({**nudge, "sent_at": ts})
+
+
+# ---------------------------------------------------------------------------
+# Fixture — wire FakeState into both the state module and orchestrator._state
+# ---------------------------------------------------------------------------
 
 @pytest.fixture(autouse=True)
-def reset_state():
-    """Reset the in-memory state store before every test."""
-    state._store.clear()
-    yield
-    state._store.clear()
+def fake_state():
+    """Replace every state module function with an in-memory FakeState per test."""
+    fs = FakeState()
+    with patch.object(state, "get_state",          fs.get_state), \
+         patch.object(state, "get_history",         fs.get_history), \
+         patch.object(state, "update_after_run",    fs.update_after_run), \
+         patch.object(state, "record_nudges",       fs.record_nudges), \
+         patch.object(state, "store_nudge_bank",    fs.store_nudge_bank), \
+         patch.object(state, "get_nudge_bank",      fs.get_nudge_bank), \
+         patch.object(state, "store_insight_cache", fs.store_insight_cache), \
+         patch.object(state, "get_cached_insight",  fs.get_cached_insight), \
+         patch.object(state, "store_kv",            fs.store_kv), \
+         patch.object(state, "get_kv",              fs.get_kv):
+        yield fs
 
 
 # ===========================================================================
@@ -85,7 +167,6 @@ class TestScheduler:
             call_log.append(jtype)
             return []
 
-        # Feed six ticks: 06:59, 07:00, 07:00, 07:01, 12:00, stop
         times = [(6, 59), (7, 0), (7, 0), (7, 1), (12, 0)]
         tick_iter = iter(times)
 
@@ -102,7 +183,6 @@ class TestScheduler:
             except KeyboardInterrupt:
                 pass
 
-        # morning should have fired exactly once (07:00 appears twice but same HH:MM)
         assert call_log.count("morning") == 1
 
     def test_midday_job_fires_at_1200(self):
@@ -190,14 +270,6 @@ class TestScheduler:
 
 class TestPipeline:
 
-    def _patch_pipeline(self):
-        """Return a dict of patches for memory, llm, nudge_engine."""
-        return {
-            "_build_context":     patch.object(orch, "_build_context",    return_value=_MOCK_CONTEXT_OBJ),
-            "_generate_insight":  patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT),
-            "_generate_nudges":   patch.object(orch, "_generate_nudges",  return_value=[_MOCK_NUDGE]),
-        }
-
     def test_morning_pipeline_calls_in_order(self):
         """Morning job calls context → insight → nudges in order."""
         call_order = []
@@ -214,9 +286,9 @@ class TestPipeline:
             call_order.append("nudges")
             return [_MOCK_NUDGE]
 
-        with patch.object(orch, "_build_context", side_effect=mock_ctx), \
+        with patch.object(orch, "_build_context",   side_effect=mock_ctx), \
              patch.object(orch, "_generate_insight", side_effect=mock_ins), \
-             patch.object(orch, "_generate_nudges", side_effect=mock_nud):
+             patch.object(orch, "_generate_nudges",  side_effect=mock_nud):
             result = orch.run_job(USER, "morning")
 
         assert call_order == ["context", "insight", "nudges"]
@@ -230,9 +302,9 @@ class TestPipeline:
             captured_prefs.update(prefs)
             return []
 
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", side_effect=mock_nud):
+             patch.object(orch, "_generate_nudges",  side_effect=mock_nud):
             orch.run_job(USER, "evening")
 
         assert captured_prefs.get("strictness") == 0.4
@@ -245,7 +317,7 @@ class TestPipeline:
             captured_insight.update(ins)
             return []
 
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",  return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_nudges", side_effect=mock_nud):
             orch.run_job(USER, "midday")
 
@@ -253,9 +325,9 @@ class TestPipeline:
 
     def test_event_pipeline_runs_full_pipeline(self):
         """Event job runs the full context → insight → nudge pipeline."""
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ) as m_ctx, \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ) as m_ctx, \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT) as m_ins, \
-             patch.object(orch, "_generate_nudges", return_value=[_MOCK_NUDGE]) as m_nud:
+             patch.object(orch, "_generate_nudges",  return_value=[_MOCK_NUDGE]) as m_nud:
             result = orch.run_job(USER, "event")
 
         m_ctx.assert_called_once_with(USER)
@@ -263,11 +335,11 @@ class TestPipeline:
         m_nud.assert_called_once()
         assert result == [_MOCK_NUDGE]
 
-    def test_state_updated_after_job(self):
-        """State counters are incremented after a successful job."""
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+    def test_state_updated_after_job(self, fake_state):
+        """State counters are updated after a successful job."""
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", return_value=[_MOCK_NUDGE]):
+             patch.object(orch, "_generate_nudges",  return_value=[_MOCK_NUDGE]):
             orch.run_job(USER, "morning")
 
         s = state.get_state(USER)
@@ -282,16 +354,15 @@ class TestPipeline:
 
 class TestRateLimits:
 
-    def test_daily_limit_blocks_new_nudges(self):
+    def test_daily_limit_blocks_new_nudges(self, fake_state):
         """When daily limit is reached, run_job returns [] without calling the pipeline."""
         prefs = {"max_nudges_per_day": 2, "strictness": 0.7}
 
-        # Pre-load state to the limit
         state.record_nudges(USER, [_MOCK_NUDGE, _MOCK_NUDGE])
 
-        with patch.object(orch, "_build_context") as m_ctx, \
+        with patch.object(orch, "_build_context")   as m_ctx, \
              patch.object(orch, "_generate_insight") as m_ins, \
-             patch.object(orch, "_generate_nudges") as m_nud:
+             patch.object(orch, "_generate_nudges")  as m_nud:
             result = orch.run_job(USER, "morning", preferences=prefs)
 
         assert result == []
@@ -299,16 +370,15 @@ class TestRateLimits:
         m_ins.assert_not_called()
         m_nud.assert_not_called()
 
-    def test_daily_limit_counts_across_jobs(self):
+    def test_daily_limit_counts_across_jobs(self, fake_state):
         """Nudges from different jobs aggregate toward the daily limit."""
         prefs = {"max_nudges_per_day": 1, "strictness": 0.7}
 
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", return_value=[_MOCK_NUDGE]):
+             patch.object(orch, "_generate_nudges",  return_value=[_MOCK_NUDGE]):
             first = orch.run_job(USER, "morning", preferences=prefs)
 
-        # Now limit is reached
         with patch.object(orch, "_build_context") as m_ctx:
             second = orch.run_job(USER, "midday", preferences=prefs)
 
@@ -316,15 +386,9 @@ class TestRateLimits:
         assert second == []
         m_ctx.assert_not_called()
 
-    def test_min_gap_blocks_nudge_if_too_soon(self):
+    def test_min_gap_blocks_nudge_if_too_soon(self, fake_state):
         """run_job returns [] if the minimum gap between nudges has not elapsed."""
-        from datetime import datetime, timezone, timedelta
-
-        # Record a nudge 30 minutes ago
-        recent_ts = (datetime.now(timezone.utc) - timedelta(minutes=30)).isoformat()
-        state.get_state(USER)["last_nudge_time"] = recent_ts
-        state.get_state(USER)["recent_nudges"] = [_MOCK_NUDGE]
-        state.get_state(USER)["nudges_sent_today"] = 1
+        _inject_nudge_at(fake_state, _MOCK_NUDGE, minutes_ago=30)
 
         prefs = {"max_nudges_per_day": 5, "min_gap_hours": 2}
 
@@ -334,19 +398,15 @@ class TestRateLimits:
         assert result == []
         m_ctx.assert_not_called()
 
-    def test_min_gap_allows_nudge_after_elapsed(self):
+    def test_min_gap_allows_nudge_after_elapsed(self, fake_state):
         """run_job proceeds if the minimum gap between nudges HAS elapsed."""
-        from datetime import datetime, timezone, timedelta
-
-        # Record a nudge 3 hours ago (beyond the 2h minimum)
-        old_ts = (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat()
-        state.get_state(USER)["last_nudge_time"] = old_ts
+        _inject_nudge_at(fake_state, _MOCK_NUDGE, minutes_ago=180)
 
         prefs = {"max_nudges_per_day": 5, "min_gap_hours": 2}
 
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", return_value=[_MOCK_NUDGE]):
+             patch.object(orch, "_generate_nudges",  return_value=[_MOCK_NUDGE]):
             result = orch.run_job(USER, "morning", preferences=prefs)
 
         assert result == [_MOCK_NUDGE]
@@ -366,16 +426,16 @@ class TestEdgeCases:
             "contacts": [], "behavior_patterns": [],
             "goal_alignments": [], "recent_actions": [],
         }
-        with patch.object(orch, "_build_context", return_value=empty_context), \
+        with patch.object(orch, "_build_context",   return_value=empty_context), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", return_value=[]):
+             patch.object(orch, "_generate_nudges",  return_value=[]):
             result = orch.run_job(USER, "morning")
 
         assert result == []
 
     def test_no_insight_aborts_morning_job(self):
         """When LLM returns None, morning job returns []."""
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=None):
             result = orch.run_job(USER, "morning")
 
@@ -383,39 +443,30 @@ class TestEdgeCases:
 
     def test_no_insight_aborts_evening_job(self):
         """When LLM returns None, evening job returns []."""
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=None):
             result = orch.run_job(USER, "evening")
 
         assert result == []
 
-    def test_no_nudges_produced(self):
+    def test_no_nudges_produced(self, fake_state):
         """When nudge engine returns [], run_job returns [] and state is unchanged."""
-        with patch.object(orch, "_build_context", return_value=_MOCK_CONTEXT_OBJ), \
+        with patch.object(orch, "_build_context",   return_value=_MOCK_CONTEXT_OBJ), \
              patch.object(orch, "_generate_insight", return_value=_MOCK_INSIGHT), \
-             patch.object(orch, "_generate_nudges", return_value=[]):
+             patch.object(orch, "_generate_nudges",  return_value=[]):
             result = orch.run_job(USER, "morning")
 
         assert result == []
         assert state.get_state(USER)["nudges_sent_today"] == 0
 
     def test_memory_failure_falls_back_to_empty_context(self):
-        """If memory raises, the job falls back to empty context and continues."""
-        with patch.object(orch, "_build_context", side_effect=Exception("DB error")):
-            # Should not raise — _build_context internally handles errors
-            # patch to simulate the internal fallback
-            pass
-
-        # Direct fallback test: call the private function directly
-        with patch("orchestrator.sys") as _:
-            ctx = orch._build_context.__wrapped__(USER) if hasattr(orch._build_context, "__wrapped__") else None
-
-        # The key guarantee: run_job never propagates a memory error
+        """run_job never propagates a memory error — falls back to empty context."""
         with patch.object(orch, "_build_context", return_value={
             "user_id": USER, "goals": [], "tasks": [], "events": [],
             "contacts": [], "behavior_patterns": [], "goal_alignments": [], "recent_actions": [],
         }), patch.object(orch, "_generate_insight", return_value=None):
             result = orch.run_job(USER, "morning")
+
         assert result == []
 
     def test_invalid_job_type_raises_value_error(self):

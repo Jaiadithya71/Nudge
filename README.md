@@ -1,123 +1,78 @@
 # Nudge 🎯 (Project Mirror)
 
-**Nudge** is a personal AI system that observes your behavior, builds context from Google Calendar and Google Contacts, generates insights via a Large Language Model, and delivers proactive behavioral nudges to a **PWA (Android)** or via **Telegram** as a fallback.
+**Nudge** is a personal AI system designed to observe user behavior, synthesize context from Google Calendar and Google Contacts, generate insights via a Large Language Model, and deliver behavioral feedback. 
 
-It implements a continuous feedback loop designed to help you align daily actions with long-term goals:
-$$\text{Observe} \longrightarrow \text{Understand} \longrightarrow \text{Decide} \longrightarrow \text{Act} \longrightarrow \text{Learn}$$
-
----
-
-## 🗺️ Quick Onboarding Checklist
-If you are new to the repo, follow these 4 steps to get the system running in under 5 minutes:
-1. **Setup Env:** Copy `.env` configurations (see [Backend Setup](#1-backend-setup--configuration)).
-2. **Local Dry-Run:** Execute `python app/main.py` in `MOCK` mode. If this passes, your local SQLite databases and engines are initialized correctly.
-3. **Boot Backend:** Run `uvicorn --app-dir app api.main:app --reload` to start the API and orchestrator thread.
-4. **Boot Frontend:** Run `npm run dev` inside `/Dashboard` and login using your `.env` credentials (`jai` / `nudge-admin-password`).
+Development of the monolithic system was intentionally paused in Phase 1.5. This repository remains preserved as an **architecture blueprint, design case-study, and Model Context Protocol (MCP) implementation reference** exploring localized personal context loops.
 
 ---
 
-## 🏗️ Architecture & Module Layout
+## 💡 The "Why": The Core Vision
 
-Nudge is designed with a modular structure that isolates data storage, intelligence, logic selection, and delivery channels:
+The core objective of Nudge was to experiment with building a **digital replica of a physical persona**—a persistent background agent that understands the user's daily chores, connections, schedules, and long-term goals. The philosophical end goal was to explore personal continuity: keeping a digital duplicate alive that can manage routines, represent the user, and act as a form of virtual life extension.
+
+### The Engineering Challenges
+Building a personal duplicate requires solving major architectural problems:
+1. **The Context Length Dilemma:** AI coding agents consume massive amounts of tokens when trying to debug distributed codebases. To address this, Nudge was divided into decoupled, isolated layers (Memory, Input, Orchestrator, LLM Module) coordinated via strict schemas.
+2. **Brittle Sync Integrations:** Early iterations relied on bi-directional Notion database sync. In practice, building custom granular sync layers over external SaaS APIs proved highly brittle, unreliable for real-time CRUD operations, and difficult to test.
+3. **The Data Silo Trap:** Building custom background sync daemons to pull calendar and contact data locally is a redundant effort now that hyperscalers (such as Google via its native Personal Intelligence Workspace extensions) provide native, platform-level RAG directly over users' personal apps.
+
+---
+
+## 🏗️ The "What": System Architecture
+
+Nudge implements a time-driven loop that decouples data ingestion, decision mapping, and proactive action:
+
+$$\text{Observe} \longrightarrow \text{Understand} \longrightarrow \text{Decide} \longrightarrow \text{Act}$$
 
 ```
-Dashboard (Next.js PWA) ──[FastAPI REST API]──► SQLite & ChromaDB
-                                                      │
-Google Calendar & Contacts ──[Ingestion Service]──────┤
-                                                      ▼
-                                                User Context
-                                                      │
-                                                      ▼
+Dashboard (Next.js Control Panel) ◄──[FastAPI REST API]──► SQLite & ChromaDB
+                                                              │
+Google Calendar & Contacts ──[Ingestion Service]──────────────┤
+                                                              ▼
+                                                        User Context
+                                                              │
+                                                              ▼
 Telegram ◄──[Notification Service]◄──[Nudge Engine]◄── LLM Insight (Gemini)
 Browser PWA (Web Push)
 ```
 
-| Component / Module | Role | Key Technology | Key Exports / Entrypoints |
-|:---|:---|:---|:---|
-| **`app/Memory/`** | Multi-tenant isolated database & vector storage | SQLite, ChromaDB, Pydantic v2 | `build_user_context()`, `log_action()`, `ingest()` |
-| **`app/llm_module/`** | LLM client wrapper & prompt templates | `google-genai` (Gemini), Mock API | `generate_insight(context, mode)` |
-| **`app/Remind/`** | Rules-based behavioral nudge selection engine | Python | `generate_nudges(insight, context, history, preferences)` |
-| **`app/Orchestrator/`**| Schedulers & pipeline coordinators | Python | `run_job()`, `run_scheduler()` |
-| **`app/input/`** | External data synchronizers | Google Calendar & People APIs | `IngestionService.ingest_all(user_id)` |
-| **`app/api/`** | REST API Backend | FastAPI & Uvicorn | Routes under `/api/` prefix |
-| **`mcp_servers/`** | Model Context Protocol servers | MCP SDK | Tasks server entrypoint |
-| **`Dashboard/`** | Control center panel & task list PWA | Next.js, React, Tailwind CSS | Next.js Page components |
+### Component Overview
+* **Data Layer (`app/Memory/`):** Implements multi-tenancy by isolating databases under `Memory/data/{user_id}/mirror.db` (SQLite) and vector data under `Memory/data/{user_id}/chroma/` (ChromaDB).
+* **Intelligence Layer (`app/llm_module/`):** Generates structured insights using Gemini LLM models. It extracts goals, tasks, recent actions, and behavior patterns, validating the LLM's output against strict Pydantic schemas.
+* **Decision Engine (`app/Remind/`):** A rules-based engine that maps boolean signals from the LLM (e.g., `needs_correction`, `needs_activation`) into high/medium/low priority nudges.
+* **Delivery Layer (`app/notification_service.py`):** Delivers nudges proactively using **Web Push** (browser notifications for the Next.js PWA) and **Telegram** (featuring inline button callbacks to log user response actions).
+* **MCP Extension (`mcp_servers/tasks_server/`):** Exposes tasks, goals, and user context directly to external client LLMs via standard Model Context Protocol tools.
 
 ---
 
-## ⚠️ Core Concept: The Python Path Bootstrap
+## ⚙️ The "How": Engineering Mechanics
 
-Unlike standard packaged Python projects, Nudge's modules are not installed as packages. Instead, **`sys.path` is patched at runtime** to allow sibling directories to import each other. 
-* Whenever you create a new entrypoint or script in a subfolder, you must inject the module directory paths at the very top before other imports (refer to the path setup code block at the top of [app/main.py](file:///c:/Users/Jaiadithya/Personal_Work_Related/Nudge/app/main.py)).
-* Editors (like VS Code or PyCharm) might show broken imports unless you set `app/` and its subdirectories as source roots.
+### 1. Dynamic Nudge Generation
+Instead of invoking the LLM for every notification, Nudge executes a single daily cycle:
+1. The **Morning Job** queries the SQLite database, flattens the user's context, and passes it to the LLM.
+2. The LLM returns a structured JSON payload containing high-level `decision_signals`.
+3. The backend uses these signals to generate a pool of candidate nudges (the **Nudge Bank**) and caches them.
+4. Throughout the day, the system delivers cached nudges or triggers task-specific alerts using Python rule evaluations (no further LLM calls required).
 
----
-
-## 💾 Storage & Data Isolation
-
-* **Isolated Databases:** Each user's database is separated. Upon login/seeding, SQLite databases are generated at `app/Memory/data/{user_id}/mirror.db`.
-* **Chroma Vector Stores:** Vector databases are initialized at `app/Memory/data/{user_id}/chroma/` to embed tasks, goals, events, and contacts.
-* **Logs:** Engine logs are directed to `data/mirror.log`.
+### 2. Python Path Bootstrapping
+To keep modules modular without requiring package distribution setup, the system relies on runtime `sys.path` patching. Entrypoints (such as `app/main.py` or the API routers) insert relative sibling folders into the path at startup, permitting clean imports across sub-folders.
 
 ---
 
-## 🚀 Getting Started
+## 🛑 Project Status & Reflection
 
-### Prerequisites
-- Python 3.10+
-- Node.js 18+
-- [Optional] Google Cloud Platform credentials for Calendar and Contacts sync.
+**Status:** *Archived / Active Development Paused*
 
----
+During the development of Phase 1.5, we pivoted the engineering of Nudge toward building a standalone **Tasks MCP Server** (`mcp_servers/tasks_server/`) to allow external client LLMs (like Claude Desktop) to interface directly with our local databases over the Model Context Protocol. We continued building and refining this setup.
 
-### 1. Backend Setup & Configuration
-
-Clone the repository and install the dependencies:
-```bash
-# Install Python dependencies
-pip install -r requirements.txt
-```
-
-Create a `.env` file in the root directory and configure the environment:
-```ini
-# Gemini API Configuration
-GEMINI_API_KEY=your-gemini-api-key
-LLM_MODE=mock  # Set to "real" to make live Gemini calls
-
-# Authentication
-APP_USER_ID=jai
-APP_PASSWORD=your-dashboard-password
-JWT_SECRET_KEY=your-secure-jwt-secret
-
-# Delivery Channels
-TELEGRAM_BOT_TOKEN=your-telegram-bot-token
-TELEGRAM_CHAT_ID=your-personal-chat-id
-TELEGRAM_USE_POLLING=true
-
-# Web Push Keys (Run scripts/generate_vapid_keys.py to generate)
-VAPID_PUBLIC_KEY=your-vapid-public-key
-VAPID_PRIVATE_KEY=your-vapid-private-key
-VAPID_EMAIL=mailto:your-email@example.com
-```
-
-To configure Google integration, place your OAuth credentials file in the root directory as `gcal_credentials.json`.
+However, after using Google’s native **Personal Intelligence** extensions directly inside core applications (such as Gmail, Calendar, and Drive), the overhead of maintaining a custom, siloed data synchronization and scheduling layer felt increasingly redundant. The native, platform-level RAG executed data synthesis far more seamlessly than a custom, siloed build could achieve. Consequently, we chose to pause active development and preserve Nudge as an open-source case study in modular context design, localized storage isolation, and early MCP tool implementations.
 
 ---
 
-### 2. Frontend Setup
+<details>
+<summary>📂 Historical Setup & Running Commands (Archived)</summary>
 
-Install Next.js dependencies:
-```bash
-cd Dashboard
-npm install
-```
-
----
-
-## 🏃 Running the System
-
-### Run the Dry-Run Cycle (CLI Mode)
-You can test the entire pipeline (Context Ingestion → LLM Insight → Nudge Generation → Delivery Mock) locally:
+### Running CLI Dry-Run
 ```bash
 # Run with Mock LLM responses (default)
 python app/main.py
@@ -126,60 +81,20 @@ python app/main.py
 python app/main.py --real
 ```
 
-### Start the Backend Server (FastAPI)
-Run the FastAPI development server from the root directory:
+### Starting Servers
+* **Backend:** `uvicorn --app-dir app api.main:app --reload`
+* **Frontend:** `cd Dashboard && npm run dev`
+* **Tasks MCP Server:** `python -m mcp_servers.tasks_server.server`
+
+### Testing
 ```bash
-uvicorn --app-dir app api.main:app --reload
-```
-The interactive API documentation will be available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
-
-### Start the Frontend Server (Next.js)
-Start the Next.js dev server:
-```bash
-cd Dashboard
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) to view your control panel.
-
-### Run the Tasks MCP Server
-Expose your task list directly to Claude Desktop or external LLMs over the Model Context Protocol:
-```bash
-python -m mcp_servers.tasks_server.server
-```
-
----
-
-## 🧪 Running Tests
-
-The test suite contains module-level tests and full API integration tests:
-
-```bash
-# Run unit tests on components
+# Unit tests
 python -m pytest app/Memory/tests/
 python -m pytest app/Orchestrator/tests/
 python -m pytest app/llm_module/tests/
 python -m pytest app/Remind/test_nudge_engine.py
 
-# Run the full system integration test (requires live server running)
+# API integration tests (requires live server)
 python -m pytest app/tests/test_full_system.py
 ```
-
----
-
-## 🗺️ Project Roadmap
-
-- **Phase 1 ✅ (Complete):** Reliable reminder tool. Tasks/goals CRUD dashboard, rules-based nudge engine, Web Push, Telegram, and standard test suite.
-- **Phase 2 ⏳ (Next):** The System Learns. Behavioral pattern recognition engine, dynamic strictness adaptations, recurring tasks manager, and effectiveness statistics panel.
-- **Phase 3 📅 (Planned):** Conversational MCP Bridge. Dynamic chat console on the dashboard, Google Calendar/Tasks MCP integrations, and LLM tool adapters.
-
----
-
-## 🛑 Project Status & Engineering Reflection
-
-**Current Status:** *Archived / Development Paused*
-
-Nudge was originally designed as a functional prototype to solve the architectural "unawareness" and context isolation found in transactional AI systems. The goal was to build a secure, local orchestration layer that synthesized a user's multi-dimensional world (via Google Calendar, Contacts, and MCP servers) into proactive assistance.
-
-Development was intentionally paused following major ecosystem shifts: hyperscalers opened up deep, native personal context access across their core applications, alongside the deployment of unified frameworks like Google Spark. 
-
-Upon evaluating these updates, we recognized that native, platform-level synchronization executed the cross-app data layer more seamlessly than a custom, siloed build could realistically achieve at this stage. Rather than continuing to build in a dissolving moat, we are preserving Nudge as an open-source case study in modular context design and early Model Context Protocol (MCP) implementations. It remains a blueprint for the boundaries where individual application engineering meets ecosystem-level alignment challenges.
+</details>

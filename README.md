@@ -171,3 +171,15 @@ python -m pytest app/tests/test_full_system.py
 - **Phase 1 ✅ (Complete):** Reliable reminder tool. Tasks/goals CRUD dashboard, rules-based nudge engine, Web Push, Telegram, and standard test suite.
 - **Phase 2 ⏳ (Next):** The System Learns. Behavioral pattern recognition engine, dynamic strictness adaptations, recurring tasks manager, and effectiveness statistics panel.
 - **Phase 3 📅 (Planned):** Conversational MCP Bridge. Dynamic chat console on the dashboard, Google Calendar/Tasks MCP integrations, and LLM tool adapters.
+
+---
+
+## 🛑 Project Status & Engineering Reflection
+
+**Current Status:** *Archived / Development Paused*
+
+Nudge was originally designed as a functional prototype to solve the architectural "unawareness" and context isolation found in transactional AI systems. The goal was to build a secure, local orchestration layer that synthesized a user's multi-dimensional world (via Google Calendar, Contacts, and MCP servers) into proactive assistance.
+
+Development was intentionally paused following major ecosystem shifts: hyperscalers opened up deep, native personal context access across their core applications, alongside the deployment of unified frameworks like Google Spark. 
+
+Upon evaluating these updates, we recognized that native, platform-level synchronization executed the cross-app data layer more seamlessly than a custom, siloed build could realistically achieve at this stage. Rather than continuing to build in a dissolving moat, we are preserving Nudge as an open-source case study in modular context design and early Model Context Protocol (MCP) implementations. It remains a blueprint for the boundaries where individual application engineering meets ecosystem-level alignment challenges.

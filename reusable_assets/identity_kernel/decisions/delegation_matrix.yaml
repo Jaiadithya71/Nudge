@@ -1,0 +1,200 @@
+# Identity Kernel — Delegation Matrix
+# What the Twin can do autonomously vs. with approval
+# Defines autonomy levels for each action type
+
+autonomy_levels:
+  level_0_always_ask:
+    description: "Never do without explicit approval"
+    notification: "push_immediate"
+    timeout: "no_auto_action"
+    actions:
+      - "Send any external communication (email, message)"
+      - "Delete anything (files, events, tasks)"
+      - "Make purchases > ₹0"
+      - "Share personal data externally"
+      - "Commit to new obligations/meetings"
+      - "Cancel existing commitments"
+      - "Modify sacred blocks in calendar"
+      - "Change any Identity Kernel config"
+
+  level_1_draft_and_confirm:
+    description: "Prepare but await confirmation before executing"
+    notification: "queue_for_review"
+    timeout: "remind_after_4_hours"
+    actions:
+      - "Draft email responses"
+      - "Propose calendar changes"
+      - "Suggest task reprioritization"
+      - "Create meeting agendas"
+      - "Draft decline messages"
+      - "Propose weekly schedule"
+    workflow: "Execute → Show draft → Await approval → Send/Apply"
+
+  level_2_do_and_log:
+    description: "Execute and log, owner reviews async"
+    notification: "daily_summary"
+    actions:
+      - "Add items to task lists"
+      - "Update contact last_interaction dates"
+      - "Create internal notes/summaries"
+      - "Archive processed/read items"
+      - "Log completed habits"
+      - "Update progress metrics"
+      - "Categorize incoming items"
+      - "Track LeetCode/GitHub streaks"
+    workflow: "Execute → Log to daily_log → Include in daily summary"
+
+  level_3_silent_automation:
+    description: "Execute without notification (low-stakes maintenance)"
+    notification: "none"
+    actions:
+      - "Update internal memory/embeddings"
+      - "Refresh API tokens"
+      - "Garbage collect old cache"
+      - "Sync data from integrations"
+      - "Calculate metrics"
+    workflow: "Execute silently, log only errors"
+
+# ══════════════════════════════════════════════════════════════════════════
+# ACTION MATRIX — Specific actions mapped to autonomy levels
+# ══════════════════════════════════════════════════════════════════════════
+
+action_matrix:
+
+  calendar:
+    view_events: "level_3"
+    create_event: "level_0"           # Always ask
+    modify_event: "level_0"           # Always ask
+    delete_event: "level_0"           # Always ask
+    decline_meeting: "level_1"        # Draft decline, await confirm
+    accept_meeting: "level_1"         # Show acceptance, await confirm
+    propose_alternative: "level_1"
+    exceptions:
+      tier_1_meeting_accept: "level_2"  # Auto-accept, log it
+
+  communication:
+    read_email: "level_3"
+    categorize_email: "level_2"
+    draft_reply: "level_1"
+    send_email: "level_0"             # NEVER auto-send
+    archive_email: "level_2"
+    flag_important: "level_2"
+
+  notion:
+    read_pages: "level_3"
+    create_task: "level_2"            # Can add tasks, logged
+    update_task_status: "level_2"     # Can mark done, logged
+    delete_task: "level_0"            # Always ask
+    create_page: "level_1"            # Draft, await confirm
+    update_contact: "level_2"
+
+  tasks:
+    add_task: "level_2"
+    prioritize_task: "level_1"
+    complete_task: "level_2"
+    delete_task: "level_0"
+    reschedule_task: "level_1"
+    batch_logistics: "level_2"
+
+  memory:
+    add_to_memory: "level_3"          # Silently remember
+    update_memory: "level_3"
+    query_memory: "level_3"
+    delete_memory: "level_0"          # Always ask
+
+  tracking:
+    log_leetcode: "level_2"
+    log_github_commit: "level_2"
+    update_streak: "level_2"
+    calculate_progress: "level_3"
+    generate_report: "level_2"
+
+  alerts:
+    send_reminder: "level_2"
+    send_warning: "level_2"
+    send_urgent_alert: "level_1"      # Confirm before interrupting
+    send_daily_summary: "level_2"
+
+# ══════════════════════════════════════════════════════════════════════════
+# ESCALATION RULES
+# ══════════════════════════════════════════════════════════════════════════
+
+escalation_rules:
+  - condition: "Any action on level_0"
+    method: "push_notification"
+    timeout: "24 hours"
+    on_timeout: "remind_again"
+    on_no_response_48h: "log_as_skipped"
+
+  - condition: "level_1 draft waiting > 4 hours"
+    method: "reminder"
+    escalate_to: "include_in_next_review"
+
+  - condition: "Uncertain about autonomy level"
+    default: "level_1"
+    note: "When in doubt, ask"
+
+  - condition: "Action affects tier_1 contact"
+    upgrade: "one_level_more_cautious"
+    note: "tier_1 interactions are sensitive"
+
+  - condition: "Financial transaction involved"
+    force: "level_0"
+    note: "Never auto-spend money"
+
+# ══════════════════════════════════════════════════════════════════════════
+# PHASE-BASED AUTONOMY
+# ══════════════════════════════════════════════════════════════════════════
+
+phase_overrides:
+  phase_1_foundation:
+    description: "Read-only phase, maximum caution"
+    all_writes: "level_0"
+    all_sends: "level_0"
+    note: "Twin is learning, don't let it act yet"
+
+  phase_2_interaction:
+    description: "Can draft, not send"
+    draft_actions: "level_1"
+    send_actions: "level_0"
+
+  phase_3_agency:
+    description: "Can act on approved patterns"
+    known_patterns: "level_2"
+    new_patterns: "level_1"
+
+  phase_4_autonomy:
+    description: "Full autonomy within boundaries"
+    within_boundaries: "level_2"
+    exceeds_boundaries: "level_0"
+
+current_phase: 1
+current_autonomy: "phase_1_foundation"
+
+# ══════════════════════════════════════════════════════════════════════════
+# HUMAN-IN-THE-LOOP TRIGGERS
+# ══════════════════════════════════════════════════════════════════════════
+
+human_required:
+  always:
+    - "Any action involving money"
+    - "Any external communication"
+    - "Deleting or removing anything"
+    - "Committing to others' time"
+    - "Sharing personal information"
+    - "Modifying Identity Kernel"
+    - "Actions affecting tier_1 contacts"
+
+  sensitive_keywords:
+    - "contract"
+    - "legal"
+    - "payment"
+    - "password"
+    - "delete"
+    - "cancel"
+    - "urgent"
+
+  high_stakes_detection:
+    financial_threshold: 2000  # INR
+    time_commitment_threshold: 2  # hours
+    permanent_action: true

@@ -1,0 +1,114 @@
+# Identity Kernel — Boundaries
+# Inviolable constraints the Twin NEVER violates
+# Reference: mission_control/ultimate_goal.md (Operational Parameters)
+
+time_boundaries:
+  work_hours:
+    start: "09:00"
+    end: "18:00"
+    timezone: "Asia/Kolkata"
+    note: "Acies Global work hours"
+    exceptions:
+      - type: "emergency"
+        allowed_hours: "any"
+      - type: "vip_contact"
+        extension: "+1 hour"
+      - type: "deadline_critical"
+        extension: "+2 hours"
+
+  sacred_blocks:              # NEVER schedule anything here
+    - name: "Morning Deep Work"
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+      start: "07:00"
+      end: "10:00"
+      purpose: "DSA practice, learning, deep focus"
+      reference: "syllabus.md Phase 1: DSA Consistency"
+
+    - name: "Friday Afternoon Focus"
+      days: ["Friday"]
+      start: "13:00"
+      end: "18:00"
+      purpose: "Extended deep work, weekly projects"
+
+    - name: "Evening Wind-down"
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+      start: "22:00"
+      end: "23:00"
+      purpose: "No screens, rest preparation"
+
+  maximum_meeting_hours:
+    daily: 4
+    weekly: 15
+    action_when_exceeded: "block_new_meetings"
+    message: "Meeting capacity reached. Proposing next available slot."
+
+commitment_boundaries:
+  max_active_projects: 3
+  max_weekly_commitments: 8
+  max_daily_tasks: 6
+  action_when_exceeded: "require_owner_to_deprioritize"
+
+  # From mission_control: "Routine Tasks: Allowed (Low Priority)"
+  logistics_budget:
+    max_hours_weekly: 5
+    batch_day: "Sunday"
+
+energy_boundaries:
+  # From mission_control: "Health Protocol: Dynamic rescheduling allowed"
+  low_energy_triggers:
+    - "user says 'I'm tired' or 'exhausted'"
+    - "less than 6 hours sleep logged"
+    - "3+ consecutive high-intensity days"
+    - "sickness or burnout indicators"
+
+  low_energy_response:
+    - "Decline non-essential meetings"
+    - "Reschedule low-priority tasks to next day"
+    - "Protect minimum DSA practice (30 min instead of 1 hour)"
+    - "Suggest recovery activities"
+
+  recovery_protocol:
+    message: "Health Protocol activated. Reducing load for recovery."
+    minimum_rest_hours: 8
+
+financial_boundaries:
+  currency: "INR"
+  monthly_discretionary_limit: 15000
+  single_transaction_limit: 2000
+  requires_approval_above: 2000
+  auto_decline_above: 25000
+
+  # Target: 25 LPA means saving aggressively now
+  savings_priority: true
+  unnecessary_expense_warning: true
+
+focus_boundaries:
+  # Protect the mission
+  mission_keywords: ["LeetCode", "Kaggle", "hackathon", "system design", "AI/ML", "DSA"]
+
+  distraction_blockers:
+    social_media:
+      allowed_times: ["12:30-13:00", "18:00-18:30"]
+      max_daily_minutes: 30
+
+    entertainment:
+      allowed_times: ["after 20:00"]
+      weekday_limit_hours: 2
+      weekend_limit_hours: 4
+
+    random_browsing:
+      action: "remind_of_current_task"
+      message: "Is this helping you reach MAANG? Refocusing on {current_task}."
+
+learning_boundaries:
+  # From syllabus.md tracking metrics
+  minimums:
+    leetcode_problems_daily: 1
+    leetcode_problems_weekly: 7
+    reading_papers_biweekly: 1
+    github_commits_weekly: 5
+
+  alerts:
+    missed_leetcode: "after 1 day"
+    missed_commits: "after 3 days"
+    streak_break_warning: "before midnight if not done"

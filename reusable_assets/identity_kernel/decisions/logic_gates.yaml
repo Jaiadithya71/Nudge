@@ -1,0 +1,265 @@
+# Identity Kernel — Logic Gates
+# Hard rules the Twin NEVER overrides, regardless of context
+# Expanded from original logic_gates.yaml
+# Last updated: 2026-03-31
+
+gates:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # CALENDAR PROTECTION
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "CAL-001"
+    name: "Friday afternoon block"
+    trigger: "meeting request on Friday after 13:00"
+    action: "decline"
+    exceptions:
+      - contact_tag: "tier_1"
+    message: "I protect Friday afternoons for deep-focus work."
+    template_ref: "TPL-001"
+
+  - id: "CAL-002"
+    name: "Morning focus block"
+    trigger: "meeting request between 07:00 and 10:00"
+    action: "propose_alternative"
+    propose: "10:00–10:30 same day, or next available slot after 10:00"
+    message: "Mornings are reserved for DSA practice and deep work."
+    template_ref: "TPL-001"
+
+  - id: "CAL-003"
+    name: "No back-to-back meetings"
+    trigger: "new meeting would create >2 consecutive meeting slots"
+    action: "flag_for_review"
+    message: "This would create 3+ consecutive meetings. Flagging for owner approval."
+
+  - id: "CAL-004"
+    name: "Daily meeting limit"
+    trigger: "accepting would exceed 4 hours of meetings in a day"
+    action: "propose_alternative"
+    propose: "next available day with capacity"
+    message: "Meeting capacity for this day is full."
+    template_ref: "TPL-002"
+
+  - id: "CAL-005"
+    name: "Weekly meeting limit"
+    trigger: "accepting would exceed 15 hours of meetings in a week"
+    action: "decline_or_defer"
+    message: "Weekly meeting capacity reached. Proposing next week."
+
+  - id: "CAL-006"
+    name: "Sacred block protection"
+    trigger: "any request during sacred blocks (daily.yaml)"
+    action: "hard_decline"
+    sacred_blocks:
+      - "07:00-10:00 weekdays"
+      - "Friday 13:00+"
+      - "Sunday 10:00-11:00 (weekly review)"
+    exceptions:
+      - contact_tier: "tier_1"
+        action: "flag_for_owner"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # FINANCIAL GUARD RAILS
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "FIN-001"
+    name: "Any spend requires approval"
+    trigger: "any action that involves a transaction > ₹0"
+    action: "require_human_approval"
+    notification: "push"
+    message: "Transaction of ₹{amount} requires your approval."
+
+  - id: "FIN-002"
+    name: "Large spend block"
+    trigger: "transaction > ₹2000"
+    action: "block_and_flag"
+    notification: "urgent_push"
+    message: "Large transaction blocked. Review required."
+
+  - id: "FIN-003"
+    name: "Subscription awareness"
+    trigger: "recurring payment detected or requested"
+    action: "flag_for_review"
+    message: "Recurring expense detected. Monthly impact: ₹{amount}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DATA / PRIVACY
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "DATA-001"
+    name: "No external data share"
+    trigger: "request to send personal data to a third-party service"
+    action: "block"
+    approved_services:
+      - "Notion"
+      - "Google Calendar"
+      - "Google Contacts"
+      - "GitHub"
+      - "LeetCode"
+    message: "Blocked: sharing personal data with unapproved service."
+
+  - id: "DATA-002"
+    name: "Credential protection"
+    trigger: "attempt to log, share, or expose credentials/API keys"
+    action: "hard_block"
+    message: "Security: credential exposure blocked."
+
+  - id: "DATA-003"
+    name: "Identity Kernel protection"
+    trigger: "attempt to modify Identity Kernel files"
+    action: "require_human_approval"
+    message: "Identity Kernel modification requires explicit approval."
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # COMMUNICATION
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "COMM-001"
+    name: "Draft-before-send"
+    trigger: "any outgoing message (email, Slack, calendar invite)"
+    action: "draft_and_confirm"
+    message: "Draft ready for review. Confirm to send."
+    phase_override: "Always active in Phase 1-2"
+
+  - id: "COMM-002"
+    name: "Tier-based response priority"
+    trigger: "incoming message"
+    action: "categorize_by_tier"
+    rules:
+      tier_1: "surface_immediately"
+      tier_2: "next_break"
+      tier_3: "daily_batch"
+      tier_4: "weekly_review"
+
+  - id: "COMM-003"
+    name: "Auto-decline unknown meetings"
+    trigger: "meeting request from tier_4 contact without agenda"
+    action: "auto_decline"
+    message: "I'm currently focused on key priorities. Please share more details if this is time-sensitive."
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # GOAL PROTECTION
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "GOAL-001"
+    name: "DSA time defender"
+    trigger: "any conflict with 07:00-09:00 block"
+    action: "protect"
+    purpose: "LeetCode practice is non-negotiable"
+    message: "This time is reserved for DSA practice (MAANG prep)."
+
+  - id: "GOAL-002"
+    name: "Learning block defender"
+    trigger: "any conflict with 18:30-20:00 block"
+    action: "propose_alternative"
+    purpose: "Evening learning/project time"
+    message: "This is dedicated learning time. Proposing alternative."
+
+  - id: "GOAL-003"
+    name: "Weekly review protection"
+    trigger: "any conflict with Sunday 10:00-11:00"
+    action: "hard_decline"
+    purpose: "Weekly planning is critical"
+    message: "Weekly review time is protected. Not available."
+
+  - id: "GOAL-004"
+    name: "Mission alignment check"
+    trigger: "new commitment requested"
+    action: "check_alignment"
+    check: "Does this help achieve MAANG goal?"
+    if_no: "decline_or_flag"
+    message: "This doesn't appear to align with current objectives. Confirm?"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # ENERGY MANAGEMENT
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "ENERGY-001"
+    name: "Meeting fatigue prevention"
+    trigger: "4+ hours of meetings scheduled for a day"
+    action: "flag_for_review"
+    message: "Heavy meeting day detected. Consider rescheduling non-essential calls."
+
+  - id: "ENERGY-002"
+    name: "Late night work block"
+    trigger: "work-related task after 22:00"
+    action: "warn"
+    message: "It's past 22:00. Consider saving this for tomorrow."
+    exceptions:
+      - "urgent deadline"
+      - "owner override"
+
+  - id: "ENERGY-003"
+    name: "Consecutive high-intensity alert"
+    trigger: "3+ days with 10+ hours of work/study"
+    action: "suggest_recovery"
+    message: "High intensity detected for 3 days. Consider a lighter day."
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # STREAK & ACCOUNTABILITY
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "STREAK-001"
+    name: "LeetCode daily check"
+    trigger: "22:00 and no LeetCode logged today"
+    action: "urgent_reminder"
+    message: "LeetCode not done today! 2 hours left to maintain streak."
+
+  - id: "STREAK-002"
+    name: "GitHub commit check"
+    trigger: "21:00 and no GitHub commit today"
+    action: "reminder"
+    message: "No GitHub commit today. Quick commit recommended."
+
+  - id: "STREAK-003"
+    name: "Weekly target check"
+    trigger: "Sunday 10:00"
+    action: "generate_report"
+    report: "Compare weekly actuals vs targets for LeetCode, GitHub, learning hours"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DISTRACTION PREVENTION
+  # ══════════════════════════════════════════════════════════════════════════
+
+  - id: "DISTRACT-001"
+    name: "Social media during focus"
+    trigger: "social media access during focus block"
+    action: "remind"
+    message: "You're in a focus block. Is this helping the MAANG goal?"
+
+  - id: "DISTRACT-002"
+    name: "Random browsing alert"
+    trigger: "non-work browsing during work/focus hours"
+    action: "gentle_redirect"
+    message: "Current task: {current_task}. Stay focused?"
+
+# ══════════════════════════════════════════════════════════════════════════
+# GATE CONFIGURATION
+# ══════════════════════════════════════════════════════════════════════════
+
+gate_config:
+  enforcement_level: "strict"  # strict | flexible | logging_only
+
+  override_policy:
+    who_can_override: "owner_only"
+    log_overrides: true
+    require_reason: true
+
+  notification_preferences:
+    urgent: "push_immediate"
+    important: "next_check"
+    informational: "daily_summary"
+
+  phase_adjustments:
+    phase_1:
+      all_communication: "draft_and_confirm"
+      all_calendar_actions: "require_approval"
+    phase_2:
+      known_patterns: "auto_with_logging"
+    phase_3:
+      within_boundaries: "autonomous"
+    phase_4:
+      full_autonomy: true
+      boundaries_still_apply: true
+
+  current_phase: 1

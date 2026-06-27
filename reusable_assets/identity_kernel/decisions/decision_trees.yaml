@@ -1,0 +1,213 @@
+# Identity Kernel — Decision Trees
+# Complex branching logic for recurring scenarios
+# Used by the Reasoning Brain for Plan-Act-Observe cycle
+
+decision_trees:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # MEETING REQUEST EVALUATION
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-001"
+    name: "Evaluate Meeting Request"
+    trigger: "New meeting invitation received"
+    reference: "logic_gates.yaml CAL-001, CAL-002, CAL-003"
+
+    steps:
+      - step: 1
+        question: "Is the sender in tier_1_inner_circle?"
+        yes: "ACCEPT (propose time if conflict)"
+        no: "Go to step 2"
+
+      - step: 2
+        question: "Is the proposed time in a sacred block (07:00-10:00 or Friday 13:00+)?"
+        yes: "Go to step 3"
+        no: "Go to step 4"
+
+      - step: 3
+        question: "Is sender tier_2 AND topic is urgent/important?"
+        yes: "PROPOSE_ALTERNATIVE outside sacred blocks"
+        no: "DECLINE with message from CAL-001 or CAL-002"
+
+      - step: 4
+        question: "Is there a clear agenda provided?"
+        yes: "Go to step 5"
+        no: "REQUEST_AGENDA"
+        response: "Thanks for the invite. Could you share a brief agenda so I can prepare?"
+
+      - step: 5
+        question: "Can this be resolved async (email/doc/Slack)?"
+        yes: "SUGGEST_ASYNC"
+        response: "This seems like it could work well async. Would a shared doc or email thread work?"
+        no: "Go to step 6"
+
+      - step: 6
+        question: "Would this exceed daily meeting limit (4 hours)?"
+        yes: "PROPOSE_ALTERNATIVE (different day)"
+        no: "Go to step 7"
+
+      - step: 7
+        question: "Would this create 3+ back-to-back meetings?"
+        yes: "FLAG_FOR_REVIEW per CAL-003"
+        no: "Go to step 8"
+
+      - step: 8
+        question: "Is duration > 30 minutes?"
+        yes: "CONFIRM with owner before accepting"
+        no: "ACCEPT"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # TASK PRIORITIZATION
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-002"
+    name: "Prioritize New Task"
+    trigger: "New task added or requested"
+    reference: "values.yaml, objectives.yaml"
+
+    steps:
+      - step: 1
+        question: "Is this task aligned with PRIME-001 (MAANG goal)?"
+        yes: "Priority boost +20, Go to step 2"
+        no: "Go to step 3"
+
+      - step: 2
+        question: "Does it fall under current phase skills (Phase 1: DSA, SQL, Cloud)?"
+        yes: "HIGH PRIORITY - schedule in next available focus block"
+        no: "MEDIUM PRIORITY - queue for Phase 2+"
+
+      - step: 3
+        question: "Is this a 'logistics' task (groceries, admin, etc.)?"
+        yes: "LOW PRIORITY - batch to Sunday"
+        no: "Go to step 4"
+
+      - step: 4
+        question: "Is there a hard deadline within 48 hours?"
+        yes: "URGENT - schedule immediately"
+        no: "Go to step 5"
+
+      - step: 5
+        question: "Does it affect tier_1 or tier_2 contacts?"
+        yes: "MEDIUM-HIGH PRIORITY"
+        no: "MEDIUM-LOW PRIORITY - weekly batch"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # SHOULD I WORK ON THIS NOW?
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-003"
+    name: "Current Task Decision"
+    trigger: "Uncertainty about what to work on"
+    reference: "routines/daily.yaml"
+
+    steps:
+      - step: 1
+        question: "What time is it?"
+        check: "Compare against daily.yaml blocks"
+
+      - step: 2
+        question: "Is it 07:00-09:00 (Morning DSA block)?"
+        yes: "DO: LeetCode problem. Nothing else."
+        no: "Go to step 3"
+
+      - step: 3
+        question: "Is it 09:00-18:00 (Work hours)?"
+        yes: "DO: Acies work tasks. Learn SQL/Snowflake if free time."
+        no: "Go to step 4"
+
+      - step: 4
+        question: "Is it 18:30-20:00 (Evening learning)?"
+        yes: "DO: System Design, LLM/RAG, or Project Mirror"
+        no: "Go to step 5"
+
+      - step: 5
+        question: "Is it after 21:00?"
+        yes: "DO: Light tasks only, prepare for sleep"
+        no: "Check calendar for scheduled blocks"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # NEW COMMITMENT EVALUATION
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-004"
+    name: "Should I Commit To This?"
+    trigger: "Request for new commitment/project/favor"
+    reference: "boundaries.yaml commitment_boundaries"
+
+    steps:
+      - step: 1
+        question: "Does this align with PRIME-001 or current objectives?"
+        yes: "Go to step 2"
+        no: "Go to step 4"
+
+      - step: 2
+        question: "Am I below max_active_projects (3)?"
+        yes: "Go to step 3"
+        no: "DECLINE or DEFER"
+        response: "I'm at capacity with current projects. Can revisit in [timeframe]."
+
+      - step: 3
+        question: "Will this require > 5 hours/week?"
+        yes: "CONFIRM with owner, show impact on other goals"
+        no: "ACCEPT"
+
+      - step: 4
+        question: "Is the requester tier_1 or tier_2?"
+        yes: "Go to step 5"
+        no: "DECLINE politely"
+        response: "Appreciate the opportunity, but I need to focus on my current priorities."
+
+      - step: 5
+        question: "Is this a one-time favor (< 2 hours total)?"
+        yes: "ACCEPT, schedule in logistics batch"
+        no: "DISCUSS trade-offs with owner"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DISTRACTION DETECTION
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-005"
+    name: "Am I Getting Distracted?"
+    trigger: "User opens non-work app/site during focus block"
+    reference: "boundaries.yaml focus_boundaries"
+
+    steps:
+      - step: 1
+        question: "Is it currently a focus/sacred block?"
+        yes: "Go to step 2"
+        no: "ALLOW (but log)"
+
+      - step: 2
+        question: "Is the activity mission-aligned (LeetCode, docs, GitHub)?"
+        yes: "ALLOW"
+        no: "Go to step 3"
+
+      - step: 3
+        question: "Has user been focused for > 90 minutes?"
+        yes: "ALLOW 10 min break, then remind"
+        no: "REMIND"
+        message: "Is this helping you reach MAANG? Current task: {task}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DAILY COMPLETION CHECK
+  # ══════════════════════════════════════════════════════════════════════════
+  - id: "DT-006"
+    name: "End of Day Check"
+    trigger: "Time is 22:00"
+    reference: "routines/daily.yaml daily_non_negotiables"
+
+    steps:
+      - step: 1
+        question: "Was LeetCode problem completed today?"
+        yes: "Log success"
+        no: "ALERT: LeetCode not done. 30 min left before day ends."
+
+      - step: 2
+        question: "Was GitHub commit made today?"
+        yes: "Log success"
+        no: "ALERT: No GitHub commit. Quick commit recommended."
+
+      - step: 3
+        question: "Is daily log updated?"
+        yes: "All daily goals met!"
+        no: "REMIND: Update daily_log.md before sleep"
+
+default_responses:
+  uncertain: "When unsure, ask owner rather than guess"
+  conflict: "Use values.yaml weight comparison"
+  missing_data: "Log the gap and request clarification"

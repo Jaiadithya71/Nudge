@@ -1,0 +1,316 @@
+# Identity Kernel — Communication Templates
+# Pre-approved message templates for common scenarios
+# Used by Twin for draft generation (Level 1 actions)
+
+templates:
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # MEETING RELATED
+  # ══════════════════════════════════════════════════════════════════════════
+
+  decline_meeting_deep_work:
+    id: "TPL-001"
+    use_case: "Declining meeting during sacred/focus block"
+    reference: "logic_gates.yaml CAL-001, CAL-002"
+    subject: "Re: {original_subject}"
+    body: |
+      Hi {name},
+
+      Thanks for the invite. That time slot is reserved for focused work.
+
+      Would any of these alternatives work?
+      - {alt_time_1}
+      - {alt_time_2}
+
+      Let me know what works best for you.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "original_subject", "alt_time_1", "alt_time_2"]
+
+  decline_meeting_capacity:
+    id: "TPL-002"
+    use_case: "Declining due to meeting capacity reached"
+    body: |
+      Hi {name},
+
+      I've hit my meeting capacity for {day}. To ensure I give proper attention to all commitments, I need to find an alternative time.
+
+      How about:
+      - {alt_time_1}
+      - {alt_time_2}
+
+      Thanks for understanding.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "day", "alt_time_1", "alt_time_2"]
+
+  request_agenda:
+    id: "TPL-003"
+    use_case: "Requesting meeting agenda before accepting"
+    body: |
+      Hi {name},
+
+      Thanks for the meeting request. To make sure I come prepared, could you share:
+
+      1. Brief agenda/goals for the meeting
+      2. Any materials to review beforehand
+      3. Expected outcome/decisions needed
+
+      This helps me make the most of our time together.
+
+      Best,
+      Jaiadithya
+    variables: ["name"]
+
+  suggest_async:
+    id: "TPL-004"
+    use_case: "Suggesting async instead of meeting"
+    body: |
+      Hi {name},
+
+      Looking at this, I think we could handle it efficiently via {async_method}.
+
+      Would you be open to trying that first? If we need to sync after, we can always schedule a quick call.
+
+      Let me know your thoughts.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "async_method"]
+    async_methods: ["a shared doc", "email thread", "Slack messages", "Notion page"]
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # FOLLOW-UP
+  # ══════════════════════════════════════════════════════════════════════════
+
+  followup_gentle:
+    id: "TPL-010"
+    use_case: "First follow-up on unanswered message"
+    wait_days: 3
+    body: |
+      Hi {name},
+
+      Just floating this back up in case it got buried.
+
+      {original_summary}
+
+      No rush if you're busy - just let me know either way when you get a chance.
+
+      Thanks,
+      Jaiadithya
+    variables: ["name", "original_summary"]
+
+  followup_second:
+    id: "TPL-011"
+    use_case: "Second follow-up"
+    wait_days: 7
+    body: |
+      Hi {name},
+
+      Following up on my earlier message about {topic}.
+
+      I understand you're busy - just wanted to check if this is still on your radar or if I should close the loop on my end.
+
+      Thanks,
+      Jaiadithya
+    variables: ["name", "topic"]
+
+  followup_final:
+    id: "TPL-012"
+    use_case: "Final follow-up before archiving"
+    wait_days: 14
+    body: |
+      Hi {name},
+
+      Last follow-up on the below. I'll assume we're all set if I don't hear back, and will close this out.
+
+      {original_summary}
+
+      Thanks!
+      Jaiadithya
+    variables: ["name", "original_summary"]
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # NETWORKING (Important for MAANG goal)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  linkedin_connection_request:
+    id: "TPL-020"
+    use_case: "Connecting with AI/ML professionals"
+    body: |
+      Hi {name},
+
+      I came across your work on {topic} and found it really insightful.
+
+      I'm currently building expertise in AI/ML engineering and would love to connect and learn from your experience.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "topic"]
+    max_length: 300  # LinkedIn limit
+
+  informational_interview_request:
+    id: "TPL-021"
+    use_case: "Requesting informational interview with MAANG employee"
+    body: |
+      Hi {name},
+
+      I hope this message finds you well. I'm an aspiring AI/ML engineer currently working at Acies Global, preparing for roles at top tech companies.
+
+      I noticed you're at {company} working on {area}, which aligns closely with my career goals.
+
+      Would you be open to a brief 20-minute chat? I'd love to learn about your experience and any advice you might have.
+
+      I'm flexible on timing and happy to work around your schedule.
+
+      Thanks for considering,
+      Jaiadithya
+    variables: ["name", "company", "area"]
+
+  thank_you_after_chat:
+    id: "TPL-022"
+    use_case: "Thank you after informational interview"
+    body: |
+      Hi {name},
+
+      Thank you so much for taking the time to chat today. Your insights on {topic} were incredibly valuable.
+
+      I especially appreciated your advice about {specific_advice}. I'm going to start implementing that right away.
+
+      I'll keep you posted on my progress. Thanks again for your generosity with your time.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "topic", "specific_advice"]
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # WORK RELATED
+  # ══════════════════════════════════════════════════════════════════════════
+
+  status_update:
+    id: "TPL-030"
+    use_case: "Project status update"
+    body: |
+      Hi {name},
+
+      Quick update on {project}:
+
+      **Completed:**
+      {completed_items}
+
+      **In Progress:**
+      {in_progress_items}
+
+      **Blockers (if any):**
+      {blockers}
+
+      **Next Steps:**
+      {next_steps}
+
+      Let me know if you have any questions.
+
+      Thanks,
+      Jaiadithya
+    variables: ["name", "project", "completed_items", "in_progress_items", "blockers", "next_steps"]
+
+  ask_for_help:
+    id: "TPL-031"
+    use_case: "Asking colleague for help"
+    body: |
+      Hi {name},
+
+      I'm working on {task} and ran into {issue}.
+
+      I've tried:
+      - {attempted_solution_1}
+      - {attempted_solution_2}
+
+      Would you have a few minutes to help me think through this? Happy to schedule a quick call or discuss async.
+
+      Thanks,
+      Jaiadithya
+    variables: ["name", "task", "issue", "attempted_solution_1", "attempted_solution_2"]
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # DECLINING REQUESTS
+  # ══════════════════════════════════════════════════════════════════════════
+
+  decline_commitment_polite:
+    id: "TPL-040"
+    use_case: "Declining new commitment (not aligned with goals)"
+    body: |
+      Hi {name},
+
+      Thanks for thinking of me for {opportunity}.
+
+      After considering my current commitments, I don't think I can give this the attention it deserves right now.
+
+      {alternative_if_any}
+
+      I appreciate you reaching out.
+
+      Best,
+      Jaiadithya
+    variables: ["name", "opportunity", "alternative_if_any"]
+
+  decline_commitment_capacity:
+    id: "TPL-041"
+    use_case: "Declining due to capacity"
+    body: |
+      Hi {name},
+
+      I appreciate you reaching out about {opportunity}.
+
+      I'm currently at capacity with my existing projects and want to make sure I deliver on those commitments first.
+
+      Could we revisit this in {timeframe}?
+
+      Thanks for understanding,
+      Jaiadithya
+    variables: ["name", "opportunity", "timeframe"]
+
+# ══════════════════════════════════════════════════════════════════════════
+# TONE CONTEXTS
+# ══════════════════════════════════════════════════════════════════════════
+
+tone_contexts:
+  professional:
+    description: "Work colleagues, clients, professional network"
+    tone: "polished, direct, helpful"
+    formality: "semi-formal"
+    rules:
+      - "Use full sentences"
+      - "Be concise but complete"
+      - "Professional sign-off"
+
+  casual:
+    description: "Friends, close colleagues"
+    tone: "friendly, relaxed"
+    formality: "casual"
+    rules:
+      - "Contractions OK"
+      - "Shorter messages OK"
+      - "Informal sign-off"
+
+  networking:
+    description: "MAANG employees, AI/ML professionals, potential mentors"
+    tone: "respectful, curious, value-focused"
+    formality: "semi-formal"
+    rules:
+      - "Show genuine interest"
+      - "Be specific about why you're reaching out"
+      - "Respect their time"
+      - "Clear ask"
+
+# ══════════════════════════════════════════════════════════════════════════
+# TEMPLATE USAGE RULES
+# ══════════════════════════════════════════════════════════════════════════
+
+rules:
+  - "Always personalize at least one element beyond name"
+  - "Never use templates for sensitive/emotional situations"
+  - "Log template usage to avoid repetition with same contact"
+  - "Review and customize draft before sending (Level 1)"
+  - "Templates are starting points, not final messages"

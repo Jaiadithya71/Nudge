@@ -1,0 +1,94 @@
+# Identity Kernel — Core Values
+# Hierarchical value system with weights for conflict resolution
+# Reference: mission_control/ultimate_goal.md
+
+values:
+  tier_1_non_negotiable:    # These ALWAYS win in conflicts (weight: 100)
+    - id: "V001"
+      name: "Health & Family"
+      description: "Physical/mental health and family emergencies override everything"
+      weight: 100
+      trigger_keywords: ["health", "family", "emergency", "sick", "hospital"]
+
+    - id: "V002"
+      name: "Integrity"
+      description: "Never lie, mislead, or act unethically"
+      weight: 100
+      trigger_keywords: ["ethics", "honesty", "legal", "contract"]
+
+  tier_2_core:              # Strong preferences, rarely overridden (weight: 70-90)
+    - id: "V003"
+      name: "Career Mission"
+      description: "MAANG AI/ML Engineer goal - protect time for skill building"
+      weight: 90
+      daily_minimum_hours: 4
+      reference: "mission_control/ultimate_goal.md"
+      sub_goals:
+        - "Algorithmic Mastery (LeetCode)"
+        - "Data Science Dominance (Kaggle)"
+        - "Proven Innovation (Hackathons)"
+
+    - id: "V004"
+      name: "Deep Work"
+      description: "Protect focus time for meaningful creation and learning"
+      weight: 85
+      daily_minimum_hours: 4
+      protected_blocks:
+        - "07:00-10:00 (Morning Focus)"
+        - "Friday 13:00+ (Friday Afternoons)"
+
+    - id: "V005"
+      name: "Learning & Growth"
+      description: "Continuous skill development per syllabus phases"
+      weight: 80
+      weekly_minimum_hours: 10
+      reference: "mission_control/syllabus.md"
+
+    - id: "V006"
+      name: "Competitive Edge"
+      description: "Keep pace with and surpass peers (specifically Nesan)"
+      weight: 75
+      tracking_metrics:
+        - "LeetCode rating vs peers"
+        - "Kaggle rank"
+        - "Project portfolio"
+
+  tier_3_preferences:       # Nice to have, can be traded off (weight: 40-60)
+    - id: "V007"
+      name: "Exercise & Energy"
+      description: "Physical activity for sustained performance"
+      weight: 60
+      weekly_target_sessions: 3
+      flexible: true
+
+    - id: "V008"
+      name: "Financial Discipline"
+      description: "Track spending, avoid unnecessary expenses"
+      weight: 55
+      monthly_review: true
+
+    - id: "V009"
+      name: "Social Connection"
+      description: "Maintain relationships without sacrificing mission"
+      weight: 50
+      monthly_minimum_events: 2
+
+  tier_4_logistics:         # Necessary but lowest priority (weight: 10-30)
+    - id: "V010"
+      name: "Routine Tasks"
+      description: "Groceries, maintenance, admin - batch and minimize"
+      weight: 20
+      batch_frequency: "weekly"
+
+conflict_resolution:
+  method: "weight_comparison"
+  rules:
+    - "Higher weight always wins"
+    - "Within same weight: tier_1 > tier_2 > tier_3 > tier_4"
+    - "Time-sensitive items get +10 temporary weight boost"
+    - "Mission-aligned items (V003) get +5 weight boost"
+  examples:
+    - scenario: "Friend wants to hang out vs LeetCode practice"
+      resolution: "V003 (90) > V009 (50) → LeetCode wins, reschedule friend"
+    - scenario: "Family emergency vs work deadline"
+      resolution: "V001 (100) > V003 (90) → Family wins"

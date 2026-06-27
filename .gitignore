@@ -1,0 +1,8 @@
+.env
+bot/.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+bot/command_queue.json
+*.log

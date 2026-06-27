@@ -1,0 +1,159 @@
+# Identity Kernel — Weekly Routines
+# Weekly rhythm and recurring patterns
+# Source: mission_control/daily_log.md, syllabus.md
+
+weekly_anchors:
+  - name: "Weekly Review & Planning"
+    day: "Sunday"
+    time: "10:00"
+    duration: 60
+    type: "sacred"
+    checklist:
+      - "Review week's completed tasks"
+      - "Update project status in projects.yaml"
+      - "Check objective progress in objectives.yaml"
+      - "Review LeetCode streak and problems solved"
+      - "Check GitHub commit streak"
+      - "Update mission_control/daily_log.md"
+      - "Plan next week's priorities"
+      - "Time-block critical tasks in calendar"
+    output:
+      - "Weekly summary in daily_log.md"
+      - "Updated task status"
+
+  - name: "Monday Focus Set"
+    day: "Monday"
+    time: "07:00"
+    duration: 15
+    type: "admin"
+    checklist:
+      - "Review week's priorities"
+      - "Identify 3 MIT (Most Important Tasks)"
+      - "Ensure DSA problem selected"
+      - "Check calendar for conflicts"
+
+  - name: "Mid-Week Check"
+    day: "Wednesday"
+    time: "21:00"
+    duration: 15
+    type: "admin"
+    checklist:
+      - "Are you on track for weekly goals?"
+      - "DSA streak intact?"
+      - "Any blockers to address?"
+      - "Adjust Thursday/Friday if needed"
+
+  - name: "Friday Retrospective"
+    day: "Friday"
+    time: "17:30"
+    duration: 15
+    type: "admin"
+    checklist:
+      - "Quick week review"
+      - "What went well?"
+      - "What to improve?"
+      - "Weekend prep"
+
+weekly_targets:
+  # From syllabus.md tracking metrics
+  leetcode:
+    minimum_problems: 7
+    target_problems: 10
+    types: ["Medium", "Hard"]
+    focus_areas: ["Graphs", "Dynamic Programming", "Tries"]
+    contest: "Optional, 1 per week if time permits"
+
+  github:
+    minimum_commits: 5
+    target_commits: 7
+    green_squares: "Maintain streak"
+
+  learning:
+    hours: 10
+    distribution:
+      dsa: 5
+      system_design: 2
+      llm_rag: 2
+      reading: 1
+
+  reading:
+    research_papers: 1
+    per: "2 weeks"
+    log: "Track in learning log"
+
+recurring_commitments:
+  work:
+    - name: "Acies Daily Work"
+      frequency: "daily"
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+      time: "09:00-18:00"
+      flexible: false
+
+  personal:
+    - name: "Weekly Review"
+      frequency: "weekly"
+      day: "Sunday"
+      time: "10:00"
+      duration: 60
+      flexible: false
+
+batch_processing:
+  email:
+    times: ["09:30", "13:00", "17:00"]
+    duration: 15
+    rule: "No email outside these times"
+
+  messages:
+    times: ["10:00", "15:00", "19:00"]
+    duration: 10
+
+  social_media:
+    times: ["12:30"]
+    duration: 15
+    note: "Optional, skip if busy"
+    weekday_only: true
+
+  logistics:
+    day: "Sunday"
+    tasks:
+      - "Groceries"
+      - "Meal prep"
+      - "Admin tasks"
+      - "Bills/finance review"
+
+weekly_metrics_dashboard:
+  track:
+    - metric: "LeetCode problems solved"
+      target: 7
+      source: "LeetCode API/manual"
+
+    - metric: "GitHub commits"
+      target: 5
+      source: "GitHub API"
+
+    - metric: "Learning hours"
+      target: 10
+      source: "Time tracking"
+
+    - metric: "Deep work blocks completed"
+      target: 10
+      source: "Calendar analysis"
+
+  review_day: "Sunday"
+  alert_if_below: 70  # percent of target
+
+accountability:
+  streak_tracking:
+    - name: "LeetCode Daily"
+      check: "At least 1 problem per day"
+      alert: "22:00 if not done"
+
+    - name: "GitHub Commits"
+      check: "At least 1 commit per day"
+      alert: "21:00 if not done"
+
+  weekly_goals_check:
+    day: "Sunday"
+    time: "10:00"
+    compare: "actual vs target"
+    action_if_missed: "Add catch-up tasks to next week"

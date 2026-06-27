@@ -1,0 +1,201 @@
+# Identity Kernel — Daily Routines
+# Ideal day structure - the Twin protects this rhythm
+# Source: mission_control/ultimate_goal.md (Daily Rhythm)
+
+operational_rhythm:
+  source: "Morning Briefing -> Execution -> Evening Debrief"
+
+weekday_template:
+  blocks:
+    - name: "Morning Routine"
+      start: "06:00"
+      end: "07:00"
+      type: "sacred"
+      activities:
+        - "Wake up, hygiene"
+        - "Light stretching/exercise"
+        - "Breakfast"
+      interruption_policy: "none"
+
+    - name: "Morning Deep Work (DSA)"
+      start: "07:00"
+      end: "09:00"
+      type: "focus"
+      purpose: "LeetCode practice - 1 Medium/Hard problem"
+      ideal_tasks:
+        - "LeetCode daily challenge"
+        - "DSA concept review"
+        - "Algorithm practice"
+      interruption_policy: "tier_1_only"
+      reference: "syllabus.md - DSA Consistency"
+
+    - name: "Work Hours (Acies)"
+      start: "09:00"
+      end: "18:00"
+      type: "work"
+      purpose: "Job responsibilities at Acies Global"
+      sub_blocks:
+        - name: "Morning Work Block"
+          start: "09:00"
+          end: "12:00"
+          ideal_tasks:
+            - "Most important work task"
+            - "Deep work on Enterprise Data Engineering skills"
+        - name: "Lunch Break"
+          start: "12:00"
+          end: "13:00"
+          type: "break"
+        - name: "Afternoon Work Block"
+          start: "13:00"
+          end: "18:00"
+          ideal_tasks:
+            - "Meetings (if any)"
+            - "Collaborative work"
+            - "Learning on the job (SQL, Snowflake, AWS)"
+
+    - name: "Evening Learning"
+      start: "18:30"
+      end: "20:00"
+      type: "focus"
+      purpose: "Skill building beyond work"
+      ideal_tasks:
+        - "System Design study"
+        - "LLM/RAG learning"
+        - "Project Mirror development"
+        - "Research paper reading"
+      interruption_policy: "tier_1_and_tier_2"
+
+    - name: "Dinner & Rest"
+      start: "20:00"
+      end: "21:00"
+      type: "break"
+      activities:
+        - "Dinner"
+        - "Short walk"
+        - "Family/social time"
+
+    - name: "Evening Review"
+      start: "21:00"
+      end: "22:00"
+      type: "admin"
+      purpose: "Daily debrief"
+      activities:
+        - "Review day's accomplishments"
+        - "Update task status"
+        - "Plan tomorrow's priorities"
+        - "Log in daily_log.md"
+
+    - name: "Wind Down"
+      start: "22:00"
+      end: "23:00"
+      type: "personal"
+      activities:
+        - "Reading (non-technical)"
+        - "Relaxation"
+        - "Prepare for sleep"
+      rules:
+        - "No screens after 22:30"
+        - "No work-related thinking"
+
+weekend_template:
+  saturday:
+    blocks:
+      - name: "Morning Flexibility"
+        start: "08:00"
+        end: "10:00"
+        type: "personal"
+        activities:
+          - "Sleep in if needed"
+          - "Leisurely breakfast"
+
+      - name: "Weekend DSA"
+        start: "10:00"
+        end: "12:00"
+        type: "focus"
+        purpose: "Extended LeetCode session"
+        ideal_tasks:
+          - "2 LeetCode problems"
+          - "Contest practice"
+
+      - name: "Project Time"
+        start: "14:00"
+        end: "18:00"
+        type: "optional_focus"
+        purpose: "Side projects, hackathon prep, Kaggle"
+        note: "Only if energy permits"
+
+      - name: "Social/Personal"
+        start: "18:00"
+        end: "22:00"
+        type: "personal"
+
+  sunday:
+    blocks:
+      - name: "Rest Morning"
+        start: "08:00"
+        end: "10:00"
+        type: "personal"
+
+      - name: "Weekly Review"
+        start: "10:00"
+        end: "11:00"
+        type: "sacred"
+        purpose: "Week retrospective and planning"
+        activities:
+          - "Review completed tasks"
+          - "Update project status"
+          - "Check goal progress"
+          - "Plan next week"
+          - "Update mission_control files"
+
+      - name: "Light Learning"
+        start: "14:00"
+        end: "16:00"
+        type: "optional_focus"
+        purpose: "Reading, videos, casual learning"
+        ideal_tasks:
+          - "Research papers"
+          - "Technical blogs"
+          - "Course videos"
+
+      - name: "Week Prep"
+        start: "20:00"
+        end: "21:00"
+        type: "admin"
+        activities:
+          - "Meal prep (optional)"
+          - "Week calendar review"
+          - "Next day preparation"
+
+energy_management:
+  peak_energy_hours: ["07:00-09:00", "10:00-12:00"]
+  low_energy_hours: ["14:00-15:00", "after 21:00"]
+
+  task_matching:
+    peak:
+      - "LeetCode Hard problems"
+      - "System Design learning"
+      - "Creative problem solving"
+      - "New concept learning"
+    low:
+      - "Code review"
+      - "Documentation"
+      - "Email processing"
+      - "Routine tasks"
+
+  post_lunch_strategy:
+    time: "14:00-15:00"
+    recommendation: "Light tasks, avoid intense learning"
+
+daily_non_negotiables:
+  - task: "1 LeetCode problem (Medium/Hard)"
+    when: "07:00-09:00"
+    skip_only_if: "sick or emergency"
+
+  - task: "Daily log update"
+    when: "21:00-22:00"
+    skip_only_if: "never"
+
+  - task: "GitHub commit"
+    when: "any time"
+    frequency: "at least 1 per day"

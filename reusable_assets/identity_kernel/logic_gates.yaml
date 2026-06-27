@@ -1,0 +1,50 @@
+# Identity Kernel — Logic Gates
+# Hard rules the Twin NEVER overrides, regardless of context.
+# Format: each gate has a condition and a resulting action/policy.
+
+gates:
+
+  # ── Calendar Protection ───────────────────────────────────────────────────
+  - id: "CAL-001"
+    name: "Friday afternoon block"
+    trigger: "meeting request on Friday after 13:00"
+    action: "decline"
+    exceptions:
+      - contact_tag: "vip"           # Tag contacts as VIP in SQLite to bypass
+    message: "I protect Friday afternoons for deep-focus work."
+
+  - id: "CAL-002"
+    name: "Morning focus block"
+    trigger: "meeting request between 07:00 and 10:00"
+    action: "propose_alternative"
+    propose: "10:00–10:30 same day, or next available morning slot after 10:00"
+    message: "Mornings are reserved for deep work. Proposing an alternative."
+
+  - id: "CAL-003"
+    name: "No back-to-back meetings"
+    trigger: "new meeting would create >2 consecutive meeting slots"
+    action: "flag_for_review"
+    message: "This would create 3+ consecutive meetings. Flagging for owner approval."
+
+  # ── Financial Guard Rails ─────────────────────────────────────────────────
+  - id: "FIN-001"
+    name: "Spend threshold"
+    trigger: "any action that involves a transaction > $50"
+    action: "require_human_approval"
+    notification: "push"
+    message: "Transaction of >{amount} requires your approval before I proceed."
+
+  # ── Data / Privacy ────────────────────────────────────────────────────────
+  - id: "DATA-001"
+    name: "No external data share"
+    trigger: "request to send personal data to a third-party service not in approved_services"
+    action: "block"
+    approved_services: []           # Populate with service names as integrations grow
+    message: "Blocked: sharing personal data with unapproved service."
+
+  # ── Communication ─────────────────────────────────────────────────────────
+  - id: "COMM-001"
+    name: "Draft-before-send"
+    trigger: "any outgoing message (email, Slack, calendar invite)"
+    action: "draft_and_confirm"     # Never send autonomously in Phase 1–2
+    message: "Draft ready for review. Confirm to send."

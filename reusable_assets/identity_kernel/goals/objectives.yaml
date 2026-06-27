@@ -1,0 +1,186 @@
+# Identity Kernel — Objectives (OKRs)
+# Source: mission_control/ultimate_goal.md
+# Last synced: 2026-03-31
+
+prime_directive:
+  id: "PRIME-001"
+  name: "MAANG AI/ML Engineer"
+  description: "Secure a high-paying AI/ML Engineer position at a MAANG or Tier-1 tech company"
+  target_compensation: "₹25+ LPA"
+  timeline: "Late 2028 - Early 2029"
+  duration_years: 2-3
+
+  motivation:
+    - id: "M1"
+      name: "Financial Freedom"
+      description: "Afford lifestyle, gadgets, and experiences without constraint"
+      quote: "Money is the tool for freedom"
+
+    - id: "M2"
+      name: "Competitive Drive"
+      description: "Keep pace with and surpass peers (specifically Nesan)"
+      quote: "Lead the pack, not just follow"
+
+    - id: "M3"
+      name: "Professional Mastery"
+      description: "Validate skills at the highest level of industry standards"
+
+objectives:
+  # Strategic Milestones from ultimate_goal.md
+  - id: "OBJ-001"
+    name: "Algorithmic Mastery"
+    description: "Solve Hard problems on LeetCode/CodeChef consistently and efficiently"
+    status: "in_progress"
+    priority: "P0"
+    timeframe: "Ongoing"
+
+    key_results:
+      - id: "KR-001a"
+        metric: "LeetCode Knight rank achieved"
+        target: true
+        current: false
+        unit: "boolean"
+
+      - id: "KR-001b"
+        metric: "Hard problems solved"
+        target: 100
+        current: 0
+        unit: "problems"
+
+      - id: "KR-001c"
+        metric: "Daily streak maintained"
+        target: 30
+        current: 0
+        unit: "days"
+
+    weekly_time_allocation: 10
+    daily_minimum: "1 Medium/Hard problem"
+    protected_blocks:
+      - "Daily 07:00-08:00"
+
+  - id: "OBJ-002"
+    name: "Data Science Dominance"
+    description: "Achieve Kaggle Master rank across multiple streams"
+    status: "pending"
+    priority: "P0"
+    timeframe: "Phase 3 (Month 10+)"
+
+    key_results:
+      - id: "KR-002a"
+        metric: "Kaggle competitions entered"
+        target: 4
+        current: 0
+        unit: "competitions"
+
+      - id: "KR-002b"
+        metric: "Kaggle medals earned"
+        target: 3
+        current: 0
+        unit: "medals"
+
+      - id: "KR-002c"
+        metric: "Kaggle Master rank achieved"
+        target: true
+        current: false
+        unit: "boolean"
+
+    weekly_time_allocation: 8
+    quarterly_competitions: 1
+
+  - id: "OBJ-003"
+    name: "Proven Innovation"
+    description: "Win prestigious hackathons (national/international level)"
+    status: "pending"
+    priority: "P1"
+    timeframe: "Ongoing"
+
+    key_results:
+      - id: "KR-003a"
+        metric: "Hackathons participated"
+        target: 6
+        current: 0
+        unit: "hackathons"
+
+      - id: "KR-003b"
+        metric: "Top 10 finishes"
+        target: 2
+        current: 0
+        unit: "placements"
+
+      - id: "KR-003c"
+        metric: "Wins"
+        target: 1
+        current: 0
+        unit: "wins"
+
+    action: "Identify and register for upcoming hackathons"
+
+  - id: "OBJ-004"
+    name: "Academic Excellence (Backup)"
+    description: "Secure admission to top-tier M.Tech with full/high scholarship"
+    status: "conditional"
+    priority: "P2"
+    timeframe: "If direct placement not optimal"
+    condition: "Activate only if MAANG path stalls"
+
+    key_results:
+      - id: "KR-004a"
+        metric: "GATE score percentile"
+        target: 99
+        current: 0
+        unit: "percentile"
+
+    action: "Research M.Tech entrance exam timelines (GATE, GRE)"
+
+  - id: "OBJ-005"
+    name: "Project Mirror MVP"
+    description: "Complete Digital Twin system (Phase 1-4)"
+    status: "in_progress"
+    priority: "P1"
+    timeframe: "Q2 2026"
+
+    key_results:
+      - id: "KR-005a"
+        metric: "Phase 1 (Foundation) complete"
+        target: true
+        current: false
+        unit: "boolean"
+
+      - id: "KR-005b"
+        metric: "Integrations working (Notion, Calendar, Contacts)"
+        target: 3
+        current: 1
+        unit: "integrations"
+
+      - id: "KR-005c"
+        metric: "CLI interface functional"
+        target: true
+        current: false
+        unit: "boolean"
+
+    weekly_time_allocation: 6
+
+tracking_metrics:
+  # From syllabus.md
+  - name: "LeetCode"
+    frequency: "daily"
+    metrics: ["streak", "contest_rating", "problems_solved"]
+
+  - name: "Projects"
+    frequency: "weekly"
+    metrics: ["github_commits", "green_squares"]
+
+  - name: "Reading"
+    frequency: "biweekly"
+    metrics: ["research_papers_read"]
+
+review_schedule:
+  weekly: "Sunday 10:00"
+  monthly: "Last Sunday of month"
+  quarterly: "End of Q1, Q2, Q3, Q4"
+
+goal_protection_rules:
+  - "If calendar conflicts with OBJ protected_blocks, decline or propose alternative"
+  - "Weekly review: compare time_spent vs time_allocated for each objective"
+  - "Alert if any P0 objective shows no progress for 7 days"
+  - "Mission-aligned activities get calendar priority"

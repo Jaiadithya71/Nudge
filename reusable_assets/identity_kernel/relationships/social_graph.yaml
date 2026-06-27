@@ -1,0 +1,118 @@
+# Identity Kernel — Social Graph
+# Contact tiers and relationship rules
+# Populate with actual contacts from Google Contacts / Notion
+
+contact_tiers:
+  tier_1_inner_circle:
+    description: "Immediate family, closest friends, critical mentors"
+    default_response_time: "same_day"
+    calendar_priority: "always_accept"
+    can_interrupt_deep_work: true
+    can_bypass_friday_block: true
+    auto_actions:
+      - "Always surface their messages immediately"
+      - "Never auto-decline their meeting requests"
+      - "Log all interactions"
+
+    contacts: []  # Populated from SQLite/Google Contacts with tag 'tier_1'
+    # Example structure:
+    # - name: "Parent Name"
+    #   relationship: "family"
+    #   preferred_channel: "phone"
+
+  tier_2_important:
+    description: "Extended family, good friends, active colleagues, mentors"
+    default_response_time: "within_24_hours"
+    calendar_priority: "prefer_accept"
+    can_interrupt_deep_work: false
+    can_bypass_friday_block: false
+    auto_actions:
+      - "Queue messages for next break"
+      - "Propose alternatives if calendar conflict"
+
+    contacts: []  # Populated from SQLite/Google Contacts with tag 'tier_2'
+    # Example: Manager at Acies, close colleagues
+
+  tier_3_professional:
+    description: "Colleagues, acquaintances, professional network"
+    default_response_time: "within_48_hours"
+    calendar_priority: "check_availability"
+    can_interrupt_deep_work: false
+    auto_actions:
+      - "Batch into daily summary"
+      - "Use templates for common requests"
+
+    contacts: []  # General work contacts
+
+  tier_4_unknown:
+    description: "Cold outreach, strangers, recruiters, unknown senders"
+    default_response_time: "weekly_batch"
+    calendar_priority: "decline_unless_relevant"
+    can_interrupt_deep_work: false
+    auto_actions:
+      - "Filter into weekly review queue"
+      - "Auto-decline meeting requests unless keyword match"
+
+    keywords_to_elevate:
+      # If message contains these, treat as Tier 3
+      - "MAANG"
+      - "AI/ML Engineer"
+      - "₹25 LPA"
+      - "referred by"
+      - "hackathon"
+      - "Kaggle"
+      - "job opportunity"
+
+special_contacts:
+  # Competitive reference from ultimate_goal.md
+  - name: "Nesan"
+    type: "peer_competitor"
+    purpose: "Competitive benchmark"
+    tracking:
+      - "Compare LeetCode progress"
+      - "Compare career milestones"
+    note: "Goal is to surpass, not just match"
+
+relationship_maintenance:
+  check_frequency: "weekly"
+  rules:
+    - tier: "tier_1_inner_circle"
+      max_days_without_contact: 7
+      reminder_action: "Create task: 'Reach out to {name}'"
+      priority: "high"
+
+    - tier: "tier_2_important"
+      max_days_without_contact: 14
+      reminder_action: "Add to weekly review"
+      priority: "medium"
+
+    - tier: "tier_3_professional"
+      max_days_without_contact: 30
+      reminder_action: "Consider reconnecting or archiving"
+      priority: "low"
+
+networking_rules:
+  # Important for MAANG goal
+  target_connections:
+    - type: "MAANG employees"
+      action: "Prioritize LinkedIn connections"
+    - type: "AI/ML professionals"
+      action: "Engage with content, build rapport"
+    - type: "Kaggle competitors"
+      action: "Learn from top performers"
+
+  referral_tracking:
+    enabled: true
+    log: "Track who can refer to target companies"
+
+meeting_preferences:
+  default_duration: 25  # minutes (not 30)
+  buffer_between: 5     # minutes
+  preferred_times: ["10:00-12:00", "14:00-16:00"]
+  avoid_times: ["07:00-10:00", "Friday 13:00+"]
+
+  preparation:
+    tier_1: "none needed"
+    tier_2: "5 min review of last interaction"
+    tier_3: "10 min prep, clear agenda required"
+    tier_4: "decline or require detailed agenda"

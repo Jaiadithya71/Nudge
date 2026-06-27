@@ -60,7 +60,7 @@ class LogUpdate(BaseModel):
 class UserIntent(BaseModel):
     intent_type: str = Field(description="The type of action the user wants to perform. Choose from: 'log_activity', 'query_status', 'execute_command', 'general_chat'.")
     log_update: LogUpdate = Field(description="The parsed log data if logging an activity.")
-    command: str = Field("", description="The whitelisted command to execute on the laptop. Must be empty or one of: 'git status', 'git log -n 5', 'run tests', 'screenshot'.")
+    command: str = Field("", description="The whitelisted command to execute on the laptop. Must be empty or one of: 'git status', 'git log -n 5', 'run tests', 'screenshot', or start with 'query DB ' followed by a search query (e.g. 'query DB aswin').")
     chat_response: str = Field(description="A brief response to send back to the user in chat. Follow the 'Mirror' voice guidelines: concise, direct, semi-formal, avoid fillers.")
 
 def verify_user(update: Update) -> bool:

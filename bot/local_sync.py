@@ -114,6 +114,8 @@ def sync_git_repo(repo_path, commit_message):
         print(f"Git sync failed: {e}")
         return False
 
+from command_handlers import dispatch_command
+
 def run_local_sync():
     nudge_dir = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\Nudge"
     next_move_plan = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\Next_Move\complex_accountability_plan.md"
@@ -189,71 +191,18 @@ def run_local_sync():
                 cmd_text = cmd_item.get("command")
                 print(f"Executing: {cmd_text}")
                 
-                stdout_str = ""
-                stderr_str = ""
+                config = {"TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN, "TELEGRAM_CHAT_ID": TELEGRAM_CHAT_ID}
+                result = dispatch_command(cmd_text, nudge_dir, config)
                 
-                if cmd_text == "screenshot":
-                    screenshot_path = os.path.join(nudge_dir, "bot", "screenshot.png")
-                    captured = False
+                if isinstance(result, tuple) and result[0] == "photo":
+                    _, photo_path, caption = result
+                    send_telegram_photo(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, photo_path, caption)
                     try:
-                        from PIL import ImageGrab
-                        screenshot = ImageGrab.grab()
-                        screenshot.save(screenshot_path)
-                        captured = True
-                    except Exception as e:
-                        print(f"PIL screenshot failed: {e}")
-                        try:
-                            import pyautogui
-                            pyautogui.screenshot(screenshot_path)
-                            captured = True
-                        except Exception as e2:
-                            print(f"PyAutoGUI screenshot failed: {e2}")
-                            stdout_str = f"Screenshot capture failed: {str(e2)}"
-                            
-                    if captured:
-                        send_telegram_photo(
-                            TELEGRAM_BOT_TOKEN,
-                            TELEGRAM_CHAT_ID,
-                            screenshot_path,
-                            caption="💻 Laptop Screenshot"
-                        )
-                        try:
-                            os.remove(screenshot_path)
-                        except Exception:
-                            pass
+                        os.remove(photo_path)
+                    except Exception:
+                        pass
                 else:
-                    shell_cmd = ""
-                    if cmd_text == "git status":
-                        shell_cmd = "git status"
-                    elif cmd_text == "git log -n 5":
-                        shell_cmd = "git log -n 5"
-                    elif cmd_text == "run tests":
-                        test_dir = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\This-or-That"
-                        if os.path.exists(test_dir):
-                            shell_cmd = "npm run test"
-                        else:
-                            shell_cmd = "echo 'No tests configured for workspace.'"
-                    
-                    if shell_cmd:
-                        cwd_dir = nudge_dir
-                        if cmd_text == "run tests" and os.path.exists(r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\This-or-That"):
-                            cwd_dir = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\This-or-That"
-                            
-                        res = subprocess.run(shell_cmd, shell=True, capture_output=True, text=True, cwd=cwd_dir)
-                        stdout_str = res.stdout
-                        stderr_str = res.stderr
-                        
-                        output_msg = f"💻 *Executed Whitelisted Command: {cmd_text}*\n\n"
-                        if stdout_str:
-                            output_msg += f"*Stdout:*\n```\n{stdout_str}\n```\n"
-                        if stderr_str:
-                            output_msg += f"*Stderr:*\n```\n{stderr_str}\n```"
-                        if not stdout_str and not stderr_str:
-                            output_msg += "_Command completed with no output._"
-                            
-                        send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, output_msg)
-                    else:
-                        send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, f"⚠️ Command '{cmd_text}' is not whitelisted.")
+                    send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, result)
                         
                 for item in queue:
                     if item.get("id") == cmd_id:

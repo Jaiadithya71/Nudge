@@ -9,6 +9,27 @@ import socketserver
 import asyncio
 from dotenv import load_dotenv
 
+# 1. Global SSL Bypass for httpx (Telegram Bot and Gemini API)
+import httpx
+try:
+    original_async_client_init = httpx.AsyncClient.__init__
+    def patched_async_client_init(self, *args, **kwargs):
+        kwargs['verify'] = False
+        original_async_client_init(self, *args, **kwargs)
+    httpx.AsyncClient.__init__ = patched_async_client_init
+
+    original_client_init = httpx.Client.__init__
+    def patched_client_init(self, *args, **kwargs):
+        kwargs['verify'] = False
+        original_client_init(self, *args, **kwargs)
+    httpx.Client.__init__ = patched_client_init
+    print("httpx SSL verification disabled globally.")
+except Exception as e:
+    print(f"Warning: Failed to patch httpx SSL: {e}")
+
+# 2. Global SSL Bypass for Git operations
+os.environ["GIT_SSL_NO_VERIFY"] = "true"
+
 # Load env variables
 load_dotenv()
 
@@ -358,11 +379,19 @@ class HealthCheckHandler(http.server.SimpleHTTPRequestHandler):
 
 def start_health_server():
     port = int(os.getenv("PORT", 8080))
-    # Allow port reuse to avoid 'Address already in use' errors
     socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.TCPServer(("", port), HealthCheckHandler)
-    print(f"Starting health check server on port {port}")
-    server.serve_forever()
+    try:
+        server = socketserver.TCPServer(("", port), HealthCheckHandler)
+        print(f"Starting health check server on port {port}")
+        server.serve_forever()
+    except OSError as e:
+        print(f"Health check server port {port} in use, trying fallback port 8081. Error: {e}")
+        try:
+            server = socketserver.TCPServer(("", 8081), HealthCheckHandler)
+            print("Starting health check server on port 8081")
+            server.serve_forever()
+        except OSError as e2:
+            print(f"Fallback health check server also failed: {e2}. Continuing without health server.")
 
 async def main():
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:

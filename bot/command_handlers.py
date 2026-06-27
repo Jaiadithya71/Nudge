@@ -40,6 +40,8 @@ def handle_query_db(cmd_text, nudge_dir, config):
         tables = [row[0] for row in cursor.fetchall()]
         
         results = []
+        photo_path = None
+        
         for table in tables:
             # Get table schema/columns
             cursor.execute(f"PRAGMA table_info({table});")
@@ -64,10 +66,24 @@ def handle_query_db(cmd_text, nudge_dir, config):
                     row_str = " | ".join(str(val) for val in row)
                     results.append(f"- {row_str}")
                     
+                    # Look for photo path in columns
+                    for val in row:
+                        val_str = str(val)
+                        if val_str.lower().endswith(('.jpg', '.jpeg', '.png')) or "photos\\" in val_str.lower():
+                            rel_path = val_str.replace("/", "\\")
+                            abs_path = os.path.join(r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\Data extraction project\local_data_pipeline", rel_path)
+                            if os.path.exists(abs_path):
+                                photo_path = abs_path
+                                
         conn.close()
         
         if results:
-            return "\n".join(results)
+            text_result = "\n".join(results)
+            if photo_path:
+                # Return tuple to send photo with caption (captions are max 1024 characters)
+                caption = text_result[:1000]
+                return ("photo", photo_path, caption)
+            return text_result
         else:
             return f"No records found for '{search_name}' in database."
     except Exception as e:

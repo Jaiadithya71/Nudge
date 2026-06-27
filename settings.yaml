@@ -1,0 +1,49 @@
+# Project Mirror — Global Settings
+# Phase 1.5: Portable Schema + Multi-Tenancy Foundation
+
+project:
+  name: "Project Mirror"
+  phase: "1.5"
+  version: "0.3.0"
+
+# ── Storage ──────────────────────────────────────────────────────────────────
+# Paths are per-user: {base_dir}/{user_id}/mirror.db
+#                     {base_dir}/{user_id}/chroma/
+# The CLI default user is "default".
+# The FastAPI server uses UUID strings from JWT tokens.
+storage:
+  base_dir: "data"
+  chroma_collection: "mirror_memory"
+
+# ── Integrations ─────────────────────────────────────────────────────────────
+# API keys are loaded from .env — do NOT hardcode secrets here
+integrations:
+  # Notion connectors archived in input/connectors/_archived/ — not active
+  # notion:
+  #   enabled: false
+  #   databases:
+  #     tasks: "30ecefe4ebef80509043f92275212665"
+  #     goals: "312cefe4ebef8161be87c0ac33df6d67"
+  #     mission_control: "312cefe4ebef8118a46ae74d6df706a6"
+  #     contacts: "335cefe4ebef8184a1c0e8f5c349fb9f"
+
+  google:
+    enabled: true
+    credentials_file: "gcal_credentials.json"
+    token_file: "gcal_token.json"
+    scopes:
+      - "https://www.googleapis.com/auth/calendar"
+      - "https://www.googleapis.com/auth/contacts"
+    read_only: false
+
+  google_calendar:
+    calendars:
+      - "primary"
+
+  google_contacts:
+    enabled: true
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+logging:
+  level: "INFO"
+  file: "data/mirror.log"

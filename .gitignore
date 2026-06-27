@@ -1,8 +1,38 @@
+# Secrets & Local Env
 .env
 bot/.env
+
+# Virtual Environments & Python Cache
 venv/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
 bot/command_queue.json
 *.log
+
+# Google OAuth tokens
+gcal_token.json
+gcal_credentials.json
+
+# SQLite + ChromaDB data
+Memory/data/
+app/Memory/data/
+
+# Node / Next.js
+Dashboard/.next/
+Dashboard/node_modules/
+Dashboard/out/
+node_modules/
+.next/
+out/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

@@ -218,12 +218,11 @@ Copy this markdown table to track your weekly progress:
 
 | Week Ending | LeetCode Solved (Target: 5) | LeetCode Contest (Target: 1) | Study Hours (Target: 10) | Git Commits / Cert Prep | Notes / Adjustments Applied | Status (Pass/Fail) |
 | :--- | :---: | :---: | :---: | :---: | :--- | :---: |
-| **June 28, 2026** |  |  | 1.0 |  | AWS ml prep |  |
-| **July 5, 2026** |  |  |  |  |  |  |
-| **July 12, 2026** |  |  |  |  |  |  |
-| **July 19, 2026** |  |  |  |  |  |  |
-| **July 26, 2026** |  |  |  |  |  |  |
-| **Aug 2, 2026** |  |  |  |  |  |  |
+| **July 5, 2026** | | | | | | |
+| **July 12, 2026** | | | | | | |
+| **July 19, 2026** | | | | | | |
+| **July 26, 2026** | | | | | | |
+| **Aug 2, 2026** | | | | | | |
 
 ---
 

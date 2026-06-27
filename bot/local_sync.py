@@ -7,6 +7,7 @@ import urllib.request
 import urllib.parse
 import mimetypes
 import ssl
+import filecmp
 from dotenv import load_dotenv
 
 # 1. Global SSL Bypass for urllib (Telegram notifications)
@@ -33,7 +34,6 @@ def send_telegram_message(token, chat_id, text):
     data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode("utf-8")
     req = urllib.request.Request(url, data=data)
     try:
-        # Use unverified SSL context
         with urllib.request.urlopen(req, context=ssl_context) as response:
             return response.read()
     except Exception as e:
@@ -74,7 +74,6 @@ def send_telegram_photo(token, chat_id, photo_path, caption=""):
     req.add_header('Content-Length', str(len(body)))
     
     try:
-        # Use unverified SSL context
         with urllib.request.urlopen(req, context=ssl_context) as response:
             return response.read()
     except Exception as e:
@@ -123,23 +122,55 @@ def run_local_sync():
     
     print("Starting local sync sequence...")
     
-    # 1. Copy plan from Next_Move to Nudge repo if Next_Move plan exists
-    if os.path.exists(next_move_plan):
-        print("Copying plan from Next_Move to Nudge...")
-        import shutil
-        shutil.copy2(next_move_plan, nudge_plan)
+    # 1. Fetch remote Git state first to see if we are behind
+    repo = git.Repo(nudge_dir)
+    if GITHUB_PAT:
+        origin = repo.remote(name='origin')
+        url = list(origin.urls)[0]
+        if "github.com" in url and GITHUB_PAT not in url:
+            authenticated_url = f"https://Jaiadithya71:{GITHUB_PAT}@github.com/Jaiadithya71/Nudge.git"
+            repo.git.remote('set-url', 'origin', authenticated_url)
+            
+    print("Checking for remote updates from Git...")
+    try:
+        repo.git.fetch('origin', 'main')
+    except Exception as e:
+        print(f"Error fetching: {e}")
         
-    # 2. Sync Git Repo (pull and commit local changes)
-    print("Syncing Git repository...")
-    sync_git_repo(nudge_dir, "Local sync updates before check-in [skip ci]")
+    active_branch = repo.active_branch
+    tracking_branch = active_branch.tracking_branch()
+    is_behind = False
     
-    # 3. Copy plan back from Nudge (after pull) to Next_Move
-    if os.path.exists(nudge_plan) and os.path.exists(os.path.dirname(next_move_plan)):
-        print("Updating Next_Move plan with pulled changes...")
-        import shutil
-        shutil.copy2(nudge_plan, next_move_plan)
+    if tracking_branch:
+        behind_commits = list(repo.iter_commits(f"{active_branch.name}..{tracking_branch.name}"))
+        is_behind = len(behind_commits) > 0
         
-    # 4. Check for pending commands in the queue
+    if is_behind:
+        print("Remote updates found. Pulling latest commits...")
+        try:
+            repo.git.pull('origin', 'main')
+        except Exception as e:
+            print(f"Error pulling: {e}")
+            
+        # Copy updated plan from Nudge repo back to Next_Move
+        if os.path.exists(nudge_plan) and os.path.exists(os.path.dirname(next_move_plan)):
+            print("Updating Next_Move plan with pulled changes...")
+            import shutil
+            shutil.copy2(nudge_plan, next_move_plan)
+    else:
+        print("No remote updates found. Syncing local plan edits...")
+        # Check if local plan in Next_Move was modified relative to Nudge plan
+        if os.path.exists(next_move_plan):
+            # Check if files differ
+            if not os.path.exists(nudge_plan) or not filecmp.cmp(next_move_plan, nudge_plan, shallow=False):
+                print("Local plan in Next_Move has edits. Copying to Nudge...")
+                import shutil
+                shutil.copy2(next_move_plan, nudge_plan)
+                sync_git_repo(nudge_dir, "Local plan edits sync [skip ci]")
+            else:
+                print("Local and remote plan files are identical. No file sync needed.")
+                
+    # 2. Check for pending commands in the queue
     if os.path.exists(queue_path):
         try:
             with open(queue_path, "r", encoding="utf-8") as f:

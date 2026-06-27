@@ -6,7 +6,18 @@ import subprocess
 import urllib.request
 import urllib.parse
 import mimetypes
+import ssl
 from dotenv import load_dotenv
+
+# 1. Global SSL Bypass for urllib (Telegram notifications)
+try:
+    ssl_context = ssl._create_unverified_context()
+except Exception as e:
+    ssl_context = None
+    print(f"Warning: Failed to create unverified SSL context: {e}")
+
+# 2. Global SSL Bypass for Git operations
+os.environ["GIT_SSL_NO_VERIFY"] = "true"
 
 # Load env variables
 load_dotenv()
@@ -22,7 +33,8 @@ def send_telegram_message(token, chat_id, text):
     data = urllib.parse.urlencode({"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}).encode("utf-8")
     req = urllib.request.Request(url, data=data)
     try:
-        with urllib.request.urlopen(req) as response:
+        # Use unverified SSL context
+        with urllib.request.urlopen(req, context=ssl_context) as response:
             return response.read()
     except Exception as e:
         print(f"Error sending message: {e}")
@@ -62,7 +74,8 @@ def send_telegram_photo(token, chat_id, photo_path, caption=""):
     req.add_header('Content-Length', str(len(body)))
     
     try:
-        with urllib.request.urlopen(req) as response:
+        # Use unverified SSL context
+        with urllib.request.urlopen(req, context=ssl_context) as response:
             return response.read()
     except Exception as e:
         print(f"Error sending photo: {e}")
@@ -103,7 +116,6 @@ def sync_git_repo(repo_path, commit_message):
         return False
 
 def run_local_sync():
-    # Paths
     nudge_dir = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\Nudge"
     next_move_plan = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\Next_Move\complex_accountability_plan.md"
     nudge_plan = os.path.join(nudge_dir, "complex_accountability_plan.md")
@@ -111,7 +123,7 @@ def run_local_sync():
     
     print("Starting local sync sequence...")
     
-    # 1. Copy plan from Next_Move (source of truth) to Nudge repo if Next_Move plan exists
+    # 1. Copy plan from Next_Move to Nudge repo if Next_Move plan exists
     if os.path.exists(next_move_plan):
         print("Copying plan from Next_Move to Nudge...")
         import shutil
@@ -146,16 +158,13 @@ def run_local_sync():
                 cmd_text = cmd_item.get("command")
                 print(f"Executing: {cmd_text}")
                 
-                # Default handler for execution
                 stdout_str = ""
                 stderr_str = ""
                 
                 if cmd_text == "screenshot":
-                    # Take screenshot
                     screenshot_path = os.path.join(nudge_dir, "bot", "screenshot.png")
                     captured = False
                     try:
-                        # Attempt using PIL ImageGrab first
                         from PIL import ImageGrab
                         screenshot = ImageGrab.grab()
                         screenshot.save(screenshot_path)
@@ -163,7 +172,6 @@ def run_local_sync():
                     except Exception as e:
                         print(f"PIL screenshot failed: {e}")
                         try:
-                            # Attempt pyautogui fallback
                             import pyautogui
                             pyautogui.screenshot(screenshot_path)
                             captured = True
@@ -172,30 +180,26 @@ def run_local_sync():
                             stdout_str = f"Screenshot capture failed: {str(e2)}"
                             
                     if captured:
-                        # Send screenshot to Telegram
                         send_telegram_photo(
                             TELEGRAM_BOT_TOKEN,
                             TELEGRAM_CHAT_ID,
                             screenshot_path,
                             caption="💻 Laptop Screenshot"
                         )
-                        # Clean up screenshot
                         try:
                             os.remove(screenshot_path)
                         except Exception:
                             pass
                 else:
-                    # Map whitelisted command
                     shell_cmd = ""
                     if cmd_text == "git status":
                         shell_cmd = "git status"
                     elif cmd_text == "git log -n 5":
                         shell_cmd = "git log -n 5"
                     elif cmd_text == "run tests":
-                        # Check if This-or-That has package.json to test
                         test_dir = r"C:\Users\jaiad\Personal_Work_Related\Personal Projects\This-or-That"
                         if os.path.exists(test_dir):
-                            shell_cmd = "npm run test" # adjust as needed
+                            shell_cmd = "npm run test"
                         else:
                             shell_cmd = "echo 'No tests configured for workspace.'"
                     
@@ -220,16 +224,13 @@ def run_local_sync():
                     else:
                         send_telegram_message(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, f"⚠️ Command '{cmd_text}' is not whitelisted.")
                         
-                # Mark as completed
                 for item in queue:
                     if item.get("id") == cmd_id:
                         item["status"] = "completed"
                         
-            # Save cleared queue (we can just truncate the file to [] to keep it small)
             with open(queue_path, "w", encoding="utf-8") as f:
                 json.dump([], f, indent=2)
                 
-            # Commit and push cleared queue
             sync_git_repo(nudge_dir, "Clear completed commands queue [skip ci]")
             
     # Send boot-up sync notification

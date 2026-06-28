@@ -1,6 +1,7 @@
 # Secrets & Local Env
 .env
 bot/.env
+*.pem
 
 # Virtual Environments & Python Cache
 venv/

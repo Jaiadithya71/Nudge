@@ -12,6 +12,17 @@ Tasks and goals are managed exclusively via the dashboard (SQLite). Notion integ
 
 The system operates per-user with isolated memory, behavior modeling, and decision loops. It is NOT a chatbot or task manager — it's a continuous feedback system.
 
+## Upcoming: WebSocket Relay Architecture (Bot System)
+
+The `bot/` subsystem is transitioning from a Git-based command queue to a **hybrid dual-path architecture**:
+
+- **Path A (AI):** Regular messages → Gemini Flash parses intent → existing pipeline (logging, audits, queries)
+- **Path B (Direct):** Messages prefixed with `>` → forwarded raw over a **persistent WebSocket** to the local daemon → instant execution, no Gemini
+
+This enables real-time remote control of the laptop from Telegram without AI latency or cost. The Git queue becomes a fallback for offline scenarios.
+
+**Full design doc:** [`Planning/WEBSOCKET_RELAY_ARCHITECTURE.md`](file:///C:/Users/jaiad/Personal_Work_Related/Personal%20Projects/Nudge/Planning/WEBSOCKET_RELAY_ARCHITECTURE.md)
+
 ## Running the System
 
 ```bash

@@ -1,895 +1,1303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Nudge — Interactive Architecture Dashboard</title>
-    <!-- Premium Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Project Nudge – Architecture &amp; Flow</title>
+    <meta name="description" content="Interactive architecture diagram for Project Nudge — a Git-synced remote accountability agent and digital twin." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
+        /* ── Design Tokens ─────────────────────────────── */
         :root {
-            --bg-color: #080c14;
-            --panel-bg: rgba(17, 24, 39, 0.7);
-            --panel-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            
-            /* Node Glow Colors */
-            --color-user: #ec4899;
-            --color-bot: #8b5cf6;
-            --color-gemini: #3b82f6;
-            --color-github: #06b6d4;
-            --color-local: #10b981;
-            --color-db: #f59e0b;
-            
-            --glow-strength: 0 0 15px;
+            --bg: #06080e;
+            --bg-surface: #0d1117;
+            --bg-card: rgba(13, 17, 23, 0.85);
+            --bg-card-hover: rgba(22, 27, 34, 0.95);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-hover: rgba(255, 255, 255, 0.12);
+            --text-1: #e6edf3;
+            --text-2: #8b949e;
+            --text-3: #484f58;
+
+            /* Component palette */
+            --c-user: #f472b6;
+            --c-user-bg: rgba(244, 114, 182, 0.08);
+            --c-bot: #a78bfa;
+            --c-bot-bg: rgba(167, 139, 250, 0.08);
+            --c-gemini: #60a5fa;
+            --c-gemini-bg: rgba(96, 165, 250, 0.08);
+            --c-github: #58d5e3;
+            --c-github-bg: rgba(88, 213, 227, 0.08);
+            --c-local: #34d399;
+            --c-local-bg: rgba(52, 211, 153, 0.08);
+            --c-db: #fbbf24;
+            --c-db-bg: rgba(251, 191, 36, 0.08);
+
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-xs: 6px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        /* ── Reset & Base ──────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-1);
+            line-height: 1.6;
             overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
         }
 
-        header {
-            padding: 2rem;
-            display: flex;
-            justify-content: space-between;
+        /* ── Animated background grid ──────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(167, 139, 250, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(52, 211, 153, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 60px 60px, 60px 60px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ── Layout ────────────────────────────────────── */
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        /* ── Header ────────────────────────────────────── */
+        .hero {
+            padding: 4rem 0 3rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-bot), transparent);
+        }
+        .hero-badge {
+            display: inline-flex;
             align-items: center;
-            border-bottom: 1px solid var(--panel-border);
-            background: rgba(8, 12, 20, 0.8);
-            backdrop-filter: blur(12px);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            background: var(--c-bot-bg);
+            border: 1px solid rgba(167, 139, 250, 0.2);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--c-bot);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
         }
-
-        .logo-area h1 {
-            font-weight: 800;
-            font-size: 1.8rem;
-            letter-spacing: -0.5px;
-            background: linear-gradient(to right, var(--color-bot), var(--color-local));
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--c-local);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+        .hero h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, var(--c-bot) 0%, var(--c-local) 50%, var(--c-gemini) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.75rem;
+        }
+        .hero p {
+            color: var(--text-2);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* ── Section Headings ──────────────────────────── */
+        .section {
+            padding: 4rem 0;
+        }
+        .section-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-3);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        .section-label::before {
+            content: '';
+            width: 20px;
+            height: 2px;
+            background: var(--c-bot);
+            border-radius: 2px;
+        }
+        .section h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
+        }
+        .section > .container > p.section-desc {
+            color: var(--text-2);
+            font-size: 0.95rem;
+            max-width: 650px;
+            margin-bottom: 2.5rem;
+        }
+
+        /* ── System Overview – The Pipeline ────────────── */
+        .pipeline {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            position: relative;
+            padding: 1rem 0;
+            overflow-x: auto;
+        }
+        .pipeline-node {
+            flex: 1;
+            min-width: 160px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.25rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+        .pipeline-node:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+        .pipeline-node .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 0.75rem;
+            transition: box-shadow 0.3s;
+        }
+        .pipeline-node:hover .icon {
+            box-shadow: 0 0 20px var(--node-color);
+        }
+        .pipeline-node h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .pipeline-node .subtitle {
+            font-size: 0.72rem;
+            color: var(--text-2);
+            line-height: 1.4;
+        }
+
+        /* Arrow connectors */
+        .pipeline-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            min-width: 48px;
+            position: relative;
+        }
+        .pipeline-arrow svg {
+            width: 36px;
+            height: 24px;
+        }
+        .pipeline-arrow .arrow-line {
+            stroke: var(--text-3);
+            stroke-width: 1.5;
+            stroke-dasharray: 6 4;
+            fill: none;
+        }
+        .pipeline-arrow .arrow-head {
+            fill: var(--text-3);
+        }
+        .pipeline-arrow .arrow-label {
+            position: absolute;
+            top: -14px;
+            font-size: 0.6rem;
+            color: var(--text-3);
+            white-space: nowrap;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Node-specific colors */
+        .node-user { --node-color: var(--c-user); }
+        .node-user .icon { background: var(--c-user-bg); color: var(--c-user); }
+        .node-user h3 { color: var(--c-user); }
+
+        .node-bot { --node-color: var(--c-bot); }
+        .node-bot .icon { background: var(--c-bot-bg); color: var(--c-bot); }
+        .node-bot h3 { color: var(--c-bot); }
+
+        .node-gemini { --node-color: var(--c-gemini); }
+        .node-gemini .icon { background: var(--c-gemini-bg); color: var(--c-gemini); }
+        .node-gemini h3 { color: var(--c-gemini); }
+
+        .node-github { --node-color: var(--c-github); }
+        .node-github .icon { background: var(--c-github-bg); color: var(--c-github); }
+        .node-github h3 { color: var(--c-github); }
+
+        .node-local { --node-color: var(--c-local); }
+        .node-local .icon { background: var(--c-local-bg); color: var(--c-local); }
+        .node-local h3 { color: var(--c-local); }
+
+        .node-db { --node-color: var(--c-db); }
+        .node-db .icon { background: var(--c-db-bg); color: var(--c-db); }
+        .node-db h3 { color: var(--c-db); }
+
+        /* ── Capabilities Grid ─────────────────────────── */
+        .cap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.25rem;
+        }
+        .cap-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.75rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+            position: relative;
+            overflow: hidden;
+        }
+        .cap-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--card-accent), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .cap-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
+        }
+        .cap-card:hover::before { opacity: 1; }
+
+        .cap-card .cap-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .cap-card .cap-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            flex-shrink: 0;
+        }
+        .cap-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .cap-card .cap-desc {
+            color: var(--text-2);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+        .cap-card .example-cmd {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xs);
+            padding: 0.6rem 0.85rem;
+            color: var(--text-2);
+            line-height: 1.5;
+        }
+        .cap-card .example-cmd .cmd-label {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-3);
+            display: block;
+            margin-bottom: 0.35rem;
+            font-weight: 600;
+        }
+        .cap-card .example-cmd .cmd-text {
+            color: var(--c-local);
+        }
+
+        /* ── Flow Diagrams ─────────────────────────────── */
+        .flow-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .flow-tab {
+            padding: 0.6rem 1.2rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-2);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            backdrop-filter: blur(8px);
+        }
+        .flow-tab:hover {
+            border-color: var(--border-hover);
+            color: var(--text-1);
+        }
+        .flow-tab.active {
+            background: var(--c-bot-bg);
+            border-color: rgba(167, 139, 250, 0.3);
+            color: var(--c-bot);
+        }
+
+        .flow-container {
+            display: none;
+        }
+        .flow-container.active {
+            display: block;
+        }
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+        }
+
+        /* The vertical spine line */
+        .flow-diagram::before {
+            content: '';
+            position: absolute;
+            left: 27px;
+            top: 28px;
+            bottom: 28px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--c-bot) 0%, var(--c-local) 50%, var(--c-github) 100%);
+            opacity: 0.2;
+            border-radius: 2px;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.25rem;
+            padding: 1rem 0;
+            position: relative;
+            opacity: 0;
+            transform: translateX(-15px);
+            animation: slideIn 0.4s ease forwards;
+        }
+        .flow-step:nth-child(1) { animation-delay: 0.05s; }
+        .flow-step:nth-child(2) { animation-delay: 0.15s; }
+        .flow-step:nth-child(3) { animation-delay: 0.25s; }
+        .flow-step:nth-child(4) { animation-delay: 0.35s; }
+        .flow-step:nth-child(5) { animation-delay: 0.45s; }
+        .flow-step:nth-child(6) { animation-delay: 0.55s; }
+        .flow-step:nth-child(7) { animation-delay: 0.65s; }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .flow-step .step-marker {
+            width: 56px;
+            min-width: 56px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            position: relative;
+            z-index: 2;
+        }
+        .flow-step .step-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 2px solid;
+            background: var(--bg);
+        }
+        .flow-step .step-component {
+            font-size: 0.58rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .flow-step .step-content {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.15rem 1.35rem;
+            backdrop-filter: blur(8px);
+            position: relative;
+        }
+        .flow-step .step-content::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 14px;
+            width: 10px;
+            height: 10px;
+            background: var(--bg-card);
+            border-left: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            transform: rotate(45deg);
+        }
+        .flow-step .step-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.3rem;
+        }
+        .flow-step .step-desc {
+            font-size: 0.8rem;
+            color: var(--text-2);
+            line-height: 1.55;
+        }
+        .flow-step .step-data {
+            margin-top: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.68rem;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xs);
+            padding: 0.6rem 0.8rem;
+            color: var(--c-local);
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Step colors by component */
+        .step-user .step-num { border-color: var(--c-user); color: var(--c-user); }
+        .step-user .step-component { color: var(--c-user); }
+        .step-bot .step-num { border-color: var(--c-bot); color: var(--c-bot); }
+        .step-bot .step-component { color: var(--c-bot); }
+        .step-gemini .step-num { border-color: var(--c-gemini); color: var(--c-gemini); }
+        .step-gemini .step-component { color: var(--c-gemini); }
+        .step-github .step-num { border-color: var(--c-github); color: var(--c-github); }
+        .step-github .step-component { color: var(--c-github); }
+        .step-local .step-num { border-color: var(--c-local); color: var(--c-local); }
+        .step-local .step-component { color: var(--c-local); }
+        .step-db .step-num { border-color: var(--c-db); color: var(--c-db); }
+        .step-db .step-component { color: var(--c-db); }
+
+        /* ── Tech Stack ────────────────────────────────── */
+        .tech-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .tech-chip {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-
-        .logo-area p {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-
-        .badge {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid var(--color-local);
-            color: var(--color-local);
-            padding: 0.35rem 0.8rem;
+            padding: 0.55rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
-            animation: pulse-border 2s infinite alternate;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-2);
+            transition: all 0.2s;
         }
-
-        .dashboard-container {
-            display: grid;
-            grid-template-columns: 280px 1fr 380px;
-            height: calc(100vh - 85px);
-            position: relative;
-        }
-
-        /* Use Cases Panel (Left) */
-        .sidebar-left {
-            border-right: 1px solid var(--panel-border);
-            padding: 1.5rem;
-            overflow-y: auto;
-            background: rgba(8, 12, 20, 0.4);
-        }
-
-        .section-title {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            font-weight: 600;
-        }
-
-        .use-case-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .use-case-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: transparent;
-            transition: background-color 0.3s;
-        }
-
-        .use-case-card:hover {
+        .tech-chip:hover {
+            border-color: var(--border-hover);
+            color: var(--text-1);
             transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.15);
-            background: rgba(17, 24, 39, 0.85);
         }
-
-        .use-case-card.active {
-            border-color: rgba(139, 92, 246, 0.4);
-            background: rgba(139, 92, 246, 0.05);
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.05);
-        }
-
-        .use-case-card.active::before {
-            background: var(--color-bot);
-        }
-
-        .use-case-card.active.uc-log::before { background: var(--color-bot); }
-        .use-case-card.active.uc-query::before { background: var(--color-db); }
-        .use-case-card.active.uc-screen::before { background: var(--color-local); }
-        .use-case-card.active.uc-audit::before { background: var(--color-user); }
-
-        .use-case-card h3 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .use-case-card p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        /* Diagram Area (Center) */
-        .diagram-area {
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .svg-connections {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .conn-path {
-            stroke: rgba(255, 255, 255, 0.05);
-            stroke-width: 2;
-            fill: none;
-            transition: stroke 0.5s, stroke-width 0.5s;
-        }
-
-        .conn-path.active {
-            stroke-width: 3;
-            animation: dash 15s linear infinite;
-        }
-
-        .conn-path.active.p-bot { stroke: var(--color-bot); }
-        .conn-path.active.p-gemini { stroke: var(--color-gemini); }
-        .conn-path.active.p-github { stroke: var(--color-github); }
-        .conn-path.active.p-local { stroke: var(--color-local); }
-        .conn-path.active.p-db { stroke: var(--color-db); }
-        .conn-path.active.p-user { stroke: var(--color-user); }
-
-        /* Animation for flowing data packets */
-        @keyframes dash {
-            to {
-                stroke-dashoffset: -1000;
-            }
-        }
-
-        .nodes-grid {
-            position: relative;
-            z-index: 10;
-            display: grid;
-            grid-template-columns: repeat(3, 240px);
-            grid-template-rows: repeat(3, 180px);
-            gap: 2rem;
-            width: 100%;
-            max-width: 850px;
-            height: 100%;
-            max-height: 600px;
-            margin: auto;
-            justify-content: center;
-            align-content: center;
-        }
-
-        /* Node Cards */
-        .node {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 16px;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            backdrop-filter: blur(8px);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-
-        .node::after {
-            content: '';
-            position: absolute;
-            inset: -1px;
-            border-radius: 16px;
-            padding: 1px;
-            background: linear-gradient(135deg, transparent, transparent);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            pointer-events: none;
-            transition: all 0.5s;
-        }
-
-        .node-icon {
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-            width: 45px;
-            height: 45px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            transition: all 0.5s;
-        }
-
-        .node h4 {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .node span {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        /* Highlight effects per node */
-        .node.active-glow {
-            transform: scale(1.05);
-            background: rgba(17, 24, 39, 0.95);
-        }
-
-        .node.active-glow.n-user {
-            border-color: var(--color-user);
-            box-shadow: var(--glow-strength) var(--color-user);
-        }
-        .node.active-glow.n-user .node-icon { background: rgba(236, 72, 153, 0.1); color: var(--color-user); }
-        .node.active-glow.n-user::after { background: linear-gradient(135deg, var(--color-user), transparent); }
-
-        .node.active-glow.n-bot {
-            border-color: var(--color-bot);
-            box-shadow: var(--glow-strength) var(--color-bot);
-        }
-        .node.active-glow.n-bot .node-icon { background: rgba(139, 92, 246, 0.1); color: var(--color-bot); }
-        .node.active-glow.n-bot::after { background: linear-gradient(135deg, var(--color-bot), transparent); }
-
-        .node.active-glow.n-gemini {
-            border-color: var(--color-gemini);
-            box-shadow: var(--glow-strength) var(--color-gemini);
-        }
-        .node.active-glow.n-gemini .node-icon { background: rgba(59, 130, 246, 0.1); color: var(--color-gemini); }
-        .node.active-glow.n-gemini::after { background: linear-gradient(135deg, var(--color-gemini), transparent); }
-
-        .node.active-glow.n-github {
-            border-color: var(--color-github);
-            box-shadow: var(--glow-strength) var(--color-github);
-        }
-        .node.active-glow.n-github .node-icon { background: rgba(6, 182, 212, 0.1); color: var(--color-github); }
-        .node.active-glow.n-github::after { background: linear-gradient(135deg, var(--color-github), transparent); }
-
-        .node.active-glow.n-local {
-            border-color: var(--color-local);
-            box-shadow: var(--glow-strength) var(--color-local);
-        }
-        .node.active-glow.n-local .node-icon { background: rgba(16, 185, 129, 0.1); color: var(--color-local); }
-        .node.active-glow.n-local::after { background: linear-gradient(135deg, var(--color-local), transparent); }
-
-        .node.active-glow.n-db {
-            border-color: var(--color-db);
-            box-shadow: var(--glow-strength) var(--color-db);
-        }
-        .node.active-glow.n-db .node-icon { background: rgba(245, 158, 11, 0.1); color: var(--color-db); }
-        .node.active-glow.n-db::after { background: linear-gradient(135deg, var(--color-db), transparent); }
-
-        /* Grid Placements */
-        .grid-1-1 { grid-column: 1; grid-row: 1; }
-        .grid-1-2 { grid-column: 1; grid-row: 2; }
-        .grid-1-3 { grid-column: 1; grid-row: 3; }
-        .grid-2-1 { grid-column: 2; grid-row: 1; }
-        .grid-2-2 { grid-column: 2; grid-row: 2; }
-        .grid-2-3 { grid-column: 2; grid-row: 3; }
-        .grid-3-1 { grid-column: 3; grid-row: 1; }
-        .grid-3-2 { grid-column: 3; grid-row: 2; }
-        .grid-3-3 { grid-column: 3; grid-row: 3; }
-
-        /* Details Panel (Right) */
-        .sidebar-right {
-            border-left: 1px solid var(--panel-border);
-            padding: 1.5rem;
-            overflow-y: auto;
-            background: rgba(8, 12, 20, 0.4);
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-
-        .step-indicator-area {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .step-pill {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            display: flex;
-            align-items: flex-start;
-            gap: 0.75rem;
-            transition: all 0.3s;
-            opacity: 0.5;
-        }
-
-        .step-pill.active {
-            opacity: 1;
-            border-color: rgba(139, 92, 246, 0.3);
-            background: rgba(139, 92, 246, 0.05);
-        }
-
-        .step-num {
-            background: rgba(255, 255, 255, 0.05);
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            flex-shrink: 0;
-            margin-top: 1px;
-            transition: all 0.3s;
-        }
-
-        .step-pill.active .step-num {
-            background: var(--color-bot);
-            color: #fff;
-        }
-
-        .step-text h5 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 0.15rem;
-        }
-
-        .step-text p {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        /* Code/Log Sandbox Viewer */
-        .sandbox-panel {
-            background: #04060b;
-            border: 1px solid var(--panel-border);
-            border-radius: 12px;
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .sandbox-header {
-            background: rgba(255, 255, 255, 0.02);
-            border-bottom: 1px solid var(--panel-border);
-            padding: 0.6rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .sandbox-title {
-            font-family: 'Outfit', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .sandbox-dots {
-            display: flex;
-            gap: 4px;
-        }
-
-        .dot {
+        .tech-chip .tech-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
         }
 
-        .sandbox-body {
-            padding: 1rem;
-            font-family: 'JetBrains Mono', monospace;
+        /* ── Footer ────────────────────────────────────── */
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            color: var(--text-3);
             font-size: 0.75rem;
-            line-height: 1.4;
-            color: #a7f3d0;
-            overflow-y: auto;
-            flex-grow: 1;
-            white-space: pre-wrap;
+            border-top: 1px solid var(--border);
         }
 
-        .token-keyword { color: #f472b6; }
-        .token-string { color: #34d399; }
-        .token-number { color: #fbbf24; }
-        .token-comment { color: #6b7280; }
-        .token-class { color: #60a5fa; }
-
-        /* Animations */
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.1); }
-            100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-                grid-template-rows: auto auto auto;
-                height: auto;
-                overflow-y: auto;
-            }
-            .sidebar-left, .diagram-area, .sidebar-right {
-                border: none;
-                height: auto;
-            }
-            .diagram-area {
-                padding: 3rem 0;
-            }
+        /* ── Responsive ────────────────────────────────── */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .pipeline { flex-direction: column; align-items: center; }
+            .pipeline-arrow { transform: rotate(90deg); width: 24px; min-width: 24px; height: 36px; }
+            .cap-grid { grid-template-columns: 1fr; }
+            .container { padding: 0 1rem; }
+            .flow-step .step-content { padding: 1rem; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo-area">
-            <h1>📍 Project Nudge</h1>
-            <p>Git-Synced Remote Accountability Agent & Digital Twin</p>
-        </div>
-        <div class="badge">Local Kernel Active</div>
-    </header>
+<!-- ═══════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════ -->
+<div class="container">
+    <section class="hero">
+        <div class="hero-badge"><span class="dot"></span> System Architecture</div>
+        <h1>📍 Project Nudge</h1>
+        <p>A Git‑synced remote accountability agent &amp; digital twin. Control your laptop, log progress, query databases, and run weekly audits — all from Telegram.</p>
+    </section>
+</div>
 
-    <div class="dashboard-container">
-        
-        <!-- Left Panel: Use Case Selection -->
-        <div class="sidebar-left">
-            <h2 class="section-title">Interactive Use Cases</h2>
-            
-            <div class="use-case-card active uc-log" onclick="activateUseCase('log')">
-                <h3>Log Activity Flow</h3>
-                <p>Convert natural language logs into structured markdown table inputs and commit them to Git.</p>
+<!-- ═══════════════════════════════════════════════════
+     SYSTEM OVERVIEW – THE PIPELINE
+     ═══════════════════════════════════════════════════ -->
+<section class="section">
+    <div class="container">
+        <div class="section-label">System Overview</div>
+        <h2>How the pieces connect</h2>
+        <p class="section-desc">Every message you send on Telegram flows through this pipeline. The Cloud Bot is the brain — it parses your intent with AI, then routes the action to the right destination.</p>
+
+        <div class="pipeline">
+            <!-- Node 1: User -->
+            <div class="pipeline-node node-user">
+                <div class="icon">📱</div>
+                <h3>You (Telegram)</h3>
+                <div class="subtitle">Send any natural-language message to @Agent71_1bot</div>
             </div>
-            
-            <div class="use-case-card uc-query" onclick="activateUseCase('query')">
-                <h3>Remote Database Query</h3>
-                <p>Lookup student files and auto-retrieve/send photos from your SQLite database remotely.</p>
+
+            <div class="pipeline-arrow">
+                <svg viewBox="0 0 36 24"><line class="arrow-line" x1="0" y1="12" x2="28" y2="12"/><polygon class="arrow-head" points="28,6 36,12 28,18"/></svg>
+                <span class="arrow-label">message</span>
             </div>
-            
-            <div class="use-case-card uc-screen" onclick="activateUseCase('screen')">
-                <h3>Desktop Remote Control</h3>
-                <p>Trigger shell commands, fetch git logs, or capture live screenshots of your laptop screen.</p>
+
+            <!-- Node 2: Cloud Bot -->
+            <div class="pipeline-node node-bot">
+                <div class="icon">🤖</div>
+                <h3>Cloud Bot</h3>
+                <div class="subtitle">Always-on Python server on Render. Routes intents to services.</div>
             </div>
-            
-            <div class="use-case-card uc-audit" onclick="activateUseCase('audit')">
-                <h3>Sunday Night Audit</h3>
-                <p>Run background cron audits, extract highlights, and record Pass/Fail targets.</p>
+
+            <div class="pipeline-arrow">
+                <svg viewBox="0 0 36 24"><line class="arrow-line" x1="0" y1="12" x2="28" y2="12"/><polygon class="arrow-head" points="28,6 36,12 28,18"/></svg>
+                <span class="arrow-label">parse</span>
             </div>
-        </div>
-        
-        <!-- Center Panel: Diagram -->
-        <div class="diagram-area">
-            <!-- Connecting lines SVG -->
-            <svg class="svg-connections">
-                <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                        <path d="M 0 1 L 10 5 L 0 9 z" fill="rgba(255,255,255,0.1)"/>
-                    </marker>
-                </defs>
-                <!-- Line: User <-> Cloud Bot -->
-                <path id="path-user-bot" class="conn-path" d="M 120,300 C 200,300 200,300 240,300" marker-end="url(#arrow)"/>
-                <!-- Line: Cloud Bot <-> Gemini -->
-                <path id="path-bot-gemini" class="conn-path" d="M 360,250 C 360,200 360,200 360,160" marker-end="url(#arrow)"/>
-                <!-- Line: Cloud Bot <-> GitHub -->
-                <path id="path-bot-github" class="conn-path" d="M 460,300 C 500,300 500,300 590,300" marker-end="url(#arrow)"/>
-                <!-- Line: GitHub <-> Local Sync -->
-                <path id="path-github-local" class="conn-path" d="M 710,300 C 750,300 750,300 830,300" marker-end="url(#arrow)"/>
-                <!-- Line: Local Sync <-> Sastra DB -->
-                <path id="path-local-db" class="conn-path" d="M 900,360 C 900,400 900,400 900,450" marker-end="url(#arrow)"/>
-                <!-- Line: Local Sync <-> Next_Move -->
-                <path id="path-local-nextmove" class="conn-path" d="M 900,240 C 900,200 900,200 900,160" marker-end="url(#arrow)"/>
-                <!-- Line: Local Sync -> Telegram User (Direct Photo Return) -->
-                <path id="path-local-user" class="conn-path" d="M 830,320 C 700,380 300,380 120,320" marker-end="url(#arrow)"/>
-            </svg>
-            
-            <div class="nodes-grid">
-                <!-- Row 1 -->
-                <div class="node grid-2-1 n-gemini" id="n-gemini">
-                    <div class="node-icon">🧠</div>
-                    <h4>Google Gemini Flash</h4>
-                    <span>LLM Parser Kernel</span>
-                </div>
-                <div class="node grid-3-1 n-nextmove" id="n-nextmove">
-                    <div class="node-icon">📁</div>
-                    <h4>Next_Move/</h4>
-                    <span>Master Plan Copy</span>
-                </div>
-                
-                <!-- Row 2 -->
-                <div class="node grid-1-2 n-user" id="n-user">
-                    <div class="node-icon">📱</div>
-                    <h4>Telegram User</h4>
-                    <span>Phone client (@Agent71_1bot)</span>
-                </div>
-                <div class="node grid-2-2 n-bot" id="n-bot">
-                    <div class="node-icon">🤖</div>
-                    <h4>Cloud Bot Daemon</h4>
-                    <span>Always-on Python Server</span>
-                </div>
-                <div class="node grid-3-2 n-github" id="n-github">
-                    <div class="node-icon">🐙</div>
-                    <h4>GitHub Repo</h4>
-                    <span>Central Sync (Main Branch)</span>
-                </div>
-                
-                <!-- Row 3 -->
-                <div class="node grid-1-3 n-local" id="n-local">
-                    <div class="node-icon">💻</div>
-                    <h4>Local Sync Daemon</h4>
-                    <span>Laptop Script</span>
-                </div>
-                <div class="node grid-3-3 n-db" id="n-db">
-                    <div class="node-icon">💾</div>
-                    <h4>Sastra DB</h4>
-                    <span>SQLite Database</span>
-                </div>
+
+            <!-- Node 3: Gemini -->
+            <div class="pipeline-node node-gemini">
+                <div class="icon">🧠</div>
+                <h3>Gemini Flash</h3>
+                <div class="subtitle">AI understands your message and extracts structured intent + data.</div>
+            </div>
+
+            <div class="pipeline-arrow">
+                <svg viewBox="0 0 36 24"><line class="arrow-line" x1="0" y1="12" x2="28" y2="12"/><polygon class="arrow-head" points="28,6 36,12 28,18"/></svg>
+                <span class="arrow-label">sync</span>
+            </div>
+
+            <!-- Node 4: GitHub -->
+            <div class="pipeline-node node-github">
+                <div class="icon">🐙</div>
+                <h3>GitHub Repo</h3>
+                <div class="subtitle">Central source of truth. All plan files are committed here.</div>
+            </div>
+
+            <div class="pipeline-arrow">
+                <svg viewBox="0 0 36 24"><line class="arrow-line" x1="0" y1="12" x2="28" y2="12"/><polygon class="arrow-head" points="28,6 36,12 28,18"/></svg>
+                <span class="arrow-label">pull</span>
+            </div>
+
+            <!-- Node 5: Local Daemon -->
+            <div class="pipeline-node node-local">
+                <div class="icon">💻</div>
+                <h3>Local Daemon</h3>
+                <div class="subtitle">Runs on your laptop. Syncs files, runs commands, queries DB.</div>
             </div>
         </div>
-        
-        <!-- Right Panel: Steps & Sandbox Code -->
-        <div class="sidebar-right">
-            <h2 class="section-title">Execution Sequence</h2>
-            
-            <div class="step-indicator-area" id="steps-container">
-                <!-- Dynamically Populated -->
-            </div>
-            
-            <div class="sandbox-panel">
-                <div class="sandbox-header">
-                    <div class="sandbox-title" id="sandbox-title">System Logs</div>
-                    <div class="sandbox-dots">
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                        <div class="dot"></div>
-                    </div>
-                </div>
-                <div class="sandbox-body" id="sandbox-code">
-                    <!-- Dynamically Populated -->
-                </div>
-            </div>
-        </div>
-        
     </div>
+</section>
 
-    <script>
-        // Use Case Data Definitions
-        const useCases = {
-            log: {
-                title: "Log Activity Flow",
-                paths: ["path-user-bot", "path-bot-gemini", "path-bot-github", "path-github-local", "path-local-nextmove"],
-                nodes: ["n-user", "n-bot", "n-gemini", "n-github", "n-local", "n-nextmove"],
-                steps: [
-                    {
-                        title: "1. Text Sent",
-                        desc: "User sends: 'studied AWS ml prep for 1 hour' on Telegram."
-                    },
-                    {
-                        title: "2. Intent Parsing",
-                        desc: "Bot calls Gemini Flash with Pydantic schema to extract structured JSON (study_hours: 1.0, note: 'AWS ml prep')."
-                    },
-                    {
-                        title: "3. Update Plan Table",
-                        desc: "Bot updates the local roadmap table file (recalculating totals & week endings)."
-                    },
-                    {
-                        title: "4. Git Sync Push",
-                        desc: "Bot commits the updated plan file locally and pushes it to GitHub."
-                    },
-                    {
-                        title: "5. Pull to Laptop",
-                        desc: "Local sync daemon pulls changes from GitHub and syncs plan to Next_Move/ sister folder."
-                    }
-                ],
-                log: `<span class="token-comment"># Cloud Bot - Incoming message</span>
-Incoming: "studied AWS ml prep for 1 hour"
+<!-- ═══════════════════════════════════════════════════
+     CAPABILITIES
+     ═══════════════════════════════════════════════════ -->
+<section class="section">
+    <div class="container">
+        <div class="section-label">Capabilities</div>
+        <h2>What you can do</h2>
+        <p class="section-desc">Every message is parsed by Gemini AI into one of these intents. You don't need to memorize commands — just type naturally.</p>
 
-<span class="token-comment"># Calling Gemini Flash structured mode</span>
-API request to model: gemini-2.5-flash
-Parsed result:
-{
-  <span class="token-keyword">"intent_type"</span>: <span class="token-string">"log_activity"</span>,
-  <span class="token-keyword">"log_update"</span>: {
-    <span class="token-keyword">"study_hours"</span>: <span class="token-number">1.0</span>,
-    <span class="token-keyword">"notes"</span>: <span class="token-string">"AWS ml prep"</span>
-  }
-}
+        <div class="cap-grid">
+            <!-- Log Activity -->
+            <div class="cap-card" style="--card-accent: var(--c-bot);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-bot-bg); color: var(--c-bot);">📝</div>
+                    <h3>Log Activity</h3>
+                </div>
+                <div class="cap-desc">Log study hours, work sessions, or any activity. Gemini parses the duration and topic, updates your markdown plan table, and pushes to Git.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"studied AWS ML prep for 1.5 hours"</span>
+                </div>
+            </div>
 
-<span class="token-comment"># Updating Markdown file</span>
-Inserted into week ending June 28, 2026.
-Running: git commit -m "Log: AWS ml prep [skip ci]"
-Running: git push origin main -> Success.`
-            },
-            query: {
-                title: "Remote Database Query",
-                paths: ["path-user-bot", "path-bot-gemini", "path-bot-github", "path-github-local", "path-local-db", "path-local-user"],
-                nodes: ["n-user", "n-bot", "n-gemini", "n-github", "n-local", "n-db"],
-                steps: [
-                    {
-                        title: "1. Query Sent",
-                        desc: "User sends: 'get the photo of hareshreenath' on Telegram."
-                    },
-                    {
-                        title: "2. Command Parsing",
-                        desc: "Gemini detects DB request and sets command output to 'query DB hareshreenath'."
-                    },
-                    {
-                        title: "3. Queue Written",
-                        desc: "Bot writes the command to command_queue.json and pushes to GitHub."
-                    },
-                    {
-                        title: "4. Execute on Laptop",
-                        desc: "Local sync daemon pulls queue, matches 'query DB', and queries SQLite."
-                    },
-                    {
-                        title: "5. Return Photo & Info",
-                        desc: "Local sync finds student's photo path and uploads photo + caption back to user."
-                    }
-                ],
-                log: `<span class="token-comment"># Local Sync Daemon - Executing command</span>
-Matched Command: "query DB hareshreenath"
-Database lookup file: sastra_data.db
+            <!-- Query Progress -->
+            <div class="cap-card" style="--card-accent: var(--c-gemini);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-gemini-bg); color: var(--c-gemini);">📊</div>
+                    <h3>Query Progress</h3>
+                </div>
+                <div class="cap-desc">Ask about your weekly hours, streaks, remaining targets, or any plan data. The bot reads your plan and responds with a formatted summary.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"how many hours have I studied this week?"</span>
+                </div>
+            </div>
 
-Running query: 
-<span class="token-keyword">SELECT</span> * <span class="token-keyword">FROM</span> students <span class="token-keyword">WHERE</span> name <span class="token-keyword">LIKE</span> <span class="token-string">'%hareshreenath%'</span>;
+            <!-- Desktop Screenshot -->
+            <div class="cap-card" style="--card-accent: var(--c-local);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-local-bg); color: var(--c-local);">📸</div>
+                    <h3>Desktop Screenshot</h3>
+                </div>
+                <div class="cap-desc">Capture a live screenshot of your laptop screen remotely. The local daemon takes the screenshot and sends it back through the bot.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"take a screenshot of my desktop"</span>
+                </div>
+            </div>
 
-Found match:
-ID: 126003097
-Name: Hareshreenath K
-Photo Path: Main Photos\\126003097.jpg
+            <!-- Run Shell Commands -->
+            <div class="cap-card" style="--card-accent: var(--c-github);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-github-bg); color: var(--c-github);">⌨️</div>
+                    <h3>Run Shell Commands</h3>
+                </div>
+                <div class="cap-desc">Execute any shell command on your laptop remotely. The output is captured and sent back to you on Telegram.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"run ls -la on my laptop"</span>
+                </div>
+            </div>
 
-<span class="token-comment"># Uploading Photo to Telegram API</span>
-Sending photo: C:\\...\\local_data_pipeline\\Main Photos\\126003097.jpg
-Status code: 200 OK -> Photo and Info sent.`
-            },
-            screen: {
-                title: "Desktop Remote Control",
-                paths: ["path-user-bot", "path-bot-gemini", "path-bot-github", "path-github-local", "path-local-user"],
-                nodes: ["n-user", "n-bot", "n-gemini", "n-github", "n-local"],
-                steps: [
-                    {
-                        title: "1. Command Requested",
-                        desc: "User asks bot to take a screenshot or execute a shell command."
-                    },
-                    {
-                        title: "2. Whitelisting Check",
-                        desc: "Gemini maps the request to a whitelisted command (e.g., 'screenshot', 'git status')."
-                    },
-                    {
-                        title: "3. Queue Sync",
-                        desc: "Bot queues command on GitHub; Local sync pulls queue on laptop."
-                    },
-                    {
-                        title: "4. Trigger Capture",
-                        desc: "Laptop runs PyAutoGUI/Pillow script to grab screenshot or run command subprocess."
-                    },
-                    {
-                        title: "5. Upload Results",
-                        desc: "Local sync script uploads image or logs directly to your Telegram chat."
-                    }
-                ],
-                log: `<span class="token-comment"># Command Dispatcher - Screenshot Request</span>
-Command matched: "screenshot"
+            <!-- Database Query -->
+            <div class="cap-card" style="--card-accent: var(--c-db);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-db-bg); color: var(--c-db);">💾</div>
+                    <h3>Database Query</h3>
+                </div>
+                <div class="cap-desc">Look up student records from the local SQLite database. Returns photos, academic info, and details — all from a Telegram message.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"find student Ravi's photo"</span>
+                </div>
+            </div>
 
-<span class="token-comment"># Invoking screen capture module</span>
-Running: ImageGrab.grab() -> Success.
-Saved image to: bot/screenshot.png
+            <!-- Weekly Audit -->
+            <div class="cap-card" style="--card-accent: var(--c-user);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-user-bg); color: var(--c-user);">🔍</div>
+                    <h3>Weekly Audit</h3>
+                </div>
+                <div class="cap-desc">Every Sunday night, an AI-powered audit reviews your week. It calculates Pass/Fail, tracks streaks, and generates actionable insights.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"run my weekly review"</span>
+                </div>
+            </div>
 
-<span class="token-comment"># Sending photo back to user</span>
-API Call: sendPhoto (chat_id: 6267409597)
-Image size: 1920x1080
-Clean up: Removing temporary screenshot.png file.`
-            },
-            audit: {
-                title: "Sunday Night Audit",
-                paths: ["path-bot-gemini", "path-user-bot"],
-                nodes: ["n-bot", "n-gemini", "n-user"],
-                steps: [
-                    {
-                        title: "1. Job Triggered",
-                        desc: "Sunday 9:00 PM cron job triggers the audit process."
-                    },
-                    {
-                        title: "2. Highlights Extraction",
-                        desc: "Gemini reads the plan file and drafts a weekly progress summary."
-                    },
-                    {
-                        title: "3. Ask Status",
-                        desc: "Bot sends the summary to user on Telegram along with Pass/Fail buttons."
-                    },
-                    {
-                        title: "4. User Response",
-                        desc: "User clicks 'Pass' or 'Fail' to confirm target completion."
-                    },
-                    {
-                        title: "5. Status Saved",
-                        desc: "Bot saves the audit result in the plan table and pushes it to Git."
-                    }
-                ],
-                log: `<span class="token-comment"># Job Queue - Sunday Audit Triggered</span>
-Trigger time: Sunday 21:00 IST
-Reading master roadmap table...
+            <!-- Daily Plan -->
+            <div class="cap-card" style="--card-accent: var(--c-gemini);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-gemini-bg); color: var(--c-gemini);">🗓️</div>
+                    <h3>Daily Plan</h3>
+                </div>
+                <div class="cap-desc">Ask the bot to generate today's plan. Gemini analyses your progress, remaining goals, and deadlines to create an optimized schedule.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"what should I do today?"</span>
+                </div>
+            </div>
 
-<span class="token-comment"># Generating audit draft</span>
-API Request to model: gemini-2.5-flash
-Prompt: "Generate weekly report summary."
-Summary generated.
+            <!-- Casual Chat -->
+            <div class="cap-card" style="--card-accent: var(--c-bot);">
+                <div class="cap-header">
+                    <div class="cap-icon" style="background: var(--c-bot-bg); color: var(--c-bot);">💬</div>
+                    <h3>Casual Chat</h3>
+                </div>
+                <div class="cap-desc">Anything that doesn't match a specific intent is treated as conversation. Gemini responds naturally, like a personal AI assistant.</div>
+                <div class="example-cmd">
+                    <span class="cmd-label">Example message</span>
+                    <span class="cmd-text">"I'm feeling unmotivated today"</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-<span class="token-comment"># Sending message with InlineKeyboard buttons</span>
-Buttons: [Pass] | [Fail]
-Waiting for callback query...
-Callback received: "audit_pass"
-Updated June 28 week ending status cell to: Pass`
-            }
-        };
+<!-- ═══════════════════════════════════════════════════
+     DETAILED FLOWS
+     ═══════════════════════════════════════════════════ -->
+<section class="section" id="flows">
+    <div class="container">
+        <div class="section-label">Step-by-Step Flows</div>
+        <h2>Follow the data</h2>
+        <p class="section-desc">Click a flow to see exactly how your message travels through the system, what happens at each step, and what data is produced.</p>
 
-        // Redraw SVG connections dynamically based on current viewport size
-        function updateSVGDimensions() {
-            const svg = document.querySelector('.svg-connections');
-            const box = svg.getBoundingClientRect();
-            
-            // Re-position paths relative to coordinates of nodes
-            const user = document.getElementById('n-user').getBoundingClientRect();
-            const bot = document.getElementById('n-bot').getBoundingClientRect();
-            const gemini = document.getElementById('n-gemini').getBoundingClientRect();
-            const github = document.getElementById('n-github').getBoundingClientRect();
-            const local = document.getElementById('n-local').getBoundingClientRect();
-            const db = document.getElementById('n-db').getBoundingClientRect();
-            const nextmove = document.getElementById('n-nextmove').getBoundingClientRect();
-            
-            const getCenter = (rect) => {
-                return {
-                    x: rect.left - box.left + rect.width / 2,
-                    y: rect.top - box.top + rect.height / 2
-                };
-            };
-            
-            const cUser = getCenter(user);
-            const cBot = getCenter(bot);
-            const cGemini = getCenter(gemini);
-            const cGithub = getCenter(github);
-            const cLocal = getCenter(local);
-            const cDb = getCenter(db);
-            const cNextMove = getCenter(nextmove);
-            
-            // Set Path coordinates
-            document.getElementById('path-user-bot').setAttribute('d', `M ${cUser.x},${cUser.y} L ${cBot.x},${cBot.y}`);
-            document.getElementById('path-bot-gemini').setAttribute('d', `M ${cBot.x},${cBot.y} L ${cGemini.x},${cGemini.y}`);
-            document.getElementById('path-bot-github').setAttribute('d', `M ${cBot.x},${cBot.y} L ${cGithub.x},${cGithub.y}`);
-            document.getElementById('path-github-local').setAttribute('d', `M ${cGithub.x},${cGithub.y} L ${cLocal.x},${cLocal.y}`);
-            document.getElementById('path-local-db').setAttribute('d', `M ${cLocal.x},${cLocal.y} L ${cDb.x},${cDb.y}`);
-            document.getElementById('path-local-nextmove').setAttribute('d', `M ${cLocal.x},${cLocal.y} L ${cNextMove.x},${cNextMove.y}`);
-            document.getElementById('path-local-user').setAttribute('d', `M ${cLocal.x},${cLocal.y} C ${cLocal.x - 100},${cLocal.y + 50} ${cUser.x + 100},${cUser.y + 50} ${cUser.x},${cUser.y}`);
-        }
+        <div class="flow-tabs">
+            <button class="flow-tab active" data-flow="log">📝 Log Activity</button>
+            <button class="flow-tab" data-flow="query">📊 Query Progress</button>
+            <button class="flow-tab" data-flow="screenshot">📸 Screenshot</button>
+            <button class="flow-tab" data-flow="dbquery">💾 Database Query</button>
+            <button class="flow-tab" data-flow="audit">🔍 Weekly Audit</button>
+            <button class="flow-tab" data-flow="daily">🗓️ Daily Plan</button>
+        </div>
 
-        function activateUseCase(key) {
-            const data = useCases[key];
-            
-            // 1. Update Left Card Active Status
-            document.querySelectorAll('.use-case-card').forEach(card => card.classList.remove('active'));
-            document.querySelector(`.uc-${key}`).classList.add('active');
-            
-            // 2. Glow Selected Nodes & Dim Others
-            document.querySelectorAll('.node').forEach(node => {
-                node.classList.remove('active-glow');
-            });
-            data.nodes.forEach(id => {
-                document.getElementById(id).classList.add('active-glow');
-            });
-            
-            // 3. Highlight SVG Paths & Animate Dash Packets
-            document.querySelectorAll('.conn-path').forEach(path => {
-                path.classList.remove('active');
-                path.style.strokeDasharray = "none";
-            });
-            
-            data.paths.forEach(id => {
-                const path = document.getElementById(id);
-                path.classList.add('active');
-                path.style.strokeDasharray = "8, 8";
-            });
-            
-            // 4. Update Steps List (Right Sidebar)
-            const stepsContainer = document.getElementById('steps-container');
-            stepsContainer.innerHTML = '';
-            
-            data.steps.forEach((step, index) => {
-                const stepHtml = `
-                    <div class="step-pill active" style="transition-delay: ${index * 0.1}s">
-                        <div class="step-num">${index + 1}</div>
-                        <div class="step-text">
-                            <h5>${step.title}</h5>
-                            <p>${step.desc}</p>
-                        </div>
+        <!-- ─── Flow: Log Activity ────────────────────── -->
+        <div class="flow-container active" id="flow-log">
+            <div class="flow-diagram">
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">You</div>
                     </div>
-                `;
-                stepsContainer.innerHTML += stepHtml;
-            });
-            
-            // 5. Update Log/Code Sandbox
-            document.getElementById('sandbox-title').textContent = `${data.title} logs`;
-            document.getElementById('sandbox-code').innerHTML = data.log;
-        }
+                    <div class="step-content">
+                        <div class="step-title">Send a message on Telegram</div>
+                        <div class="step-desc">You type a natural message like <em>"studied AWS ML prep for 1.5 hours"</em> and send it to @Agent71_1bot.</div>
+                    </div>
+                </div>
 
-        // Initialize and listen to resize
-        window.addEventListener('load', () => {
-            updateSVGDimensions();
-            activateUseCase('log'); // default
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Cloud Bot</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Bot receives the message</div>
+                        <div class="step-desc">The always-on Python server catches the incoming message and forwards it to Gemini for parsing.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">AI parses intent &amp; data</div>
+                        <div class="step-desc">Gemini Flash processes your message using structured output mode (Pydantic schema) and extracts the intent type and structured data.</div>
+                        <div class="step-data">{
+  "intent_type": "log_activity",
+  "log_update": {
+    "study_hours": 1.5,
+    "notes": "AWS ML prep"
+  }
+}</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">Plan Mgr</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Update the plan table</div>
+                        <div class="step-desc">The Plan Manager service inserts a new row into the accountability plan's markdown table, recalculates weekly totals and week-ending dates.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-github">
+                    <div class="step-marker">
+                        <div class="step-num">5</div>
+                        <div class="step-component">GitHub</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Commit &amp; push to repo</div>
+                        <div class="step-desc">The GitHub Service commits the updated plan file and pushes to the <code>main</code> branch.</div>
+                        <div class="step-data">git commit -m "Log: AWS ML prep [skip ci]"
+git push origin main → Success</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-local">
+                    <div class="step-marker">
+                        <div class="step-num">6</div>
+                        <div class="step-component">Local Daemon</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Pull &amp; sync to laptop</div>
+                        <div class="step-desc">The local sync daemon (polling every 60s) detects the new commit, pulls changes, and mirrors the updated plan to your <code>Next_Move/</code> folder.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">7</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Confirmation received</div>
+                        <div class="step-desc">The bot sends you a confirmation message on Telegram with the logged entry details and your updated weekly total.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Flow: Query Progress ─────────────────── -->
+        <div class="flow-container" id="flow-query">
+            <div class="flow-diagram">
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Ask about your progress</div>
+                        <div class="step-desc">You send a message like <em>"how many hours this week?"</em> or <em>"am I on track?"</em></div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Intent classified as query_plan</div>
+                        <div class="step-desc">Gemini recognizes this as a progress query and extracts what information you're asking for.</div>
+                        <div class="step-data">{ "intent_type": "query_plan" }</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Plan Mgr</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Read current plan data</div>
+                        <div class="step-desc">The Plan Manager reads the current week's entries from the accountability plan, calculating hours logged, remaining targets, and streak information.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Formatted summary delivered</div>
+                        <div class="step-desc">The bot sends a clean, formatted response with your hours, progress percentage, streak count, and any relevant notes.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Flow: Screenshot ─────────────────────── -->
+        <div class="flow-container" id="flow-screenshot">
+            <div class="flow-diagram">
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Request a screenshot</div>
+                        <div class="step-desc">You send <em>"take a screenshot"</em> or <em>"show me my desktop"</em> from Telegram.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Intent: request_screenshot</div>
+                        <div class="step-desc">Gemini parses the message and identifies the intent as a screenshot request.</div>
+                        <div class="step-data">{ "intent_type": "request_screenshot" }</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Cloud Bot</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Forward to Local Daemon</div>
+                        <div class="step-desc">The bot sends the screenshot request to the local daemon running on your laptop.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-local">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">Local Daemon</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Capture screen</div>
+                        <div class="step-desc">The local daemon captures a screenshot of your desktop using the screenshot service, encodes it, and sends it back through the communication channel.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">5</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Screenshot delivered</div>
+                        <div class="step-desc">The live screenshot image appears right in your Telegram chat.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Flow: Database Query ─────────────────── -->
+        <div class="flow-container" id="flow-dbquery">
+            <div class="flow-diagram">
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Ask about a student record</div>
+                        <div class="step-desc">You send a message like <em>"find student Ravi's photo"</em> or <em>"lookup roll number 21BCS123"</em>.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Intent: query_database</div>
+                        <div class="step-desc">Gemini parses the query, extracts the search parameters (name, roll number, etc.).</div>
+                        <div class="step-data">{
+  "intent_type": "query_database",
+  "query": { "name": "Ravi" }
+}</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Cloud Bot</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Route to Local Daemon</div>
+                        <div class="step-desc">The bot forwards the structured database query to the local daemon on your laptop.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-local">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">Local Daemon</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Forward to DB Handler</div>
+                        <div class="step-desc">The daemon hands the query to the database handler module for execution.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-db">
+                    <div class="step-marker">
+                        <div class="step-num">5</div>
+                        <div class="step-component">SQLite DB</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Query sastra.db</div>
+                        <div class="step-desc">The DB handler runs a SQL query against the local SQLite database (<code>sastra.db</code>), retrieves the matching student record along with their photo.</div>
+                        <div class="step-data">SELECT * FROM students WHERE name LIKE '%Ravi%'
+→ 1 record found</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">6</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Results delivered</div>
+                        <div class="step-desc">The bot sends the student's photo and academic details back to you on Telegram.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Flow: Weekly Audit ───────────────────── -->
+        <div class="flow-container" id="flow-audit">
+            <div class="flow-diagram">
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">Trigger</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Audit triggered</div>
+                        <div class="step-desc">Either automatically on Sunday night (scheduled) or manually when you send <em>"run my weekly review"</em>.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Review Svc</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Collect week's data</div>
+                        <div class="step-desc">The Review Service reads all logged entries for the current week from the accountability plan — hours per day, topics covered, targets met.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">AI generates review</div>
+                        <div class="step-desc">Gemini analyzes the week's data and generates a detailed review with highlights, areas for improvement, and an overall assessment.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">Review Svc</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Calculate Pass / Fail</div>
+                        <div class="step-desc">The service compares actual hours against weekly targets and records the outcome. Streaks are updated — consecutive passes build your streak count.</div>
+                        <div class="step-data">Target: 15.0 hrs | Actual: 16.5 hrs
+Result: ✅ PASS | Streak: 4 weeks</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-github">
+                    <div class="step-marker">
+                        <div class="step-num">5</div>
+                        <div class="step-component">GitHub</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Commit audit results</div>
+                        <div class="step-desc">The audit results and updated plan are committed and pushed to the GitHub repo for permanent record.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">6</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Detailed report on Telegram</div>
+                        <div class="step-desc">You receive a comprehensive audit report — highlights, pass/fail, streak info, and AI-generated improvement suggestions.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── Flow: Daily Plan ─────────────────────── -->
+        <div class="flow-container" id="flow-daily">
+            <div class="flow-diagram">
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">1</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Ask for today's plan</div>
+                        <div class="step-desc">You send <em>"what should I do today?"</em> or <em>"generate my daily plan"</em>.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">2</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Intent: generate_daily_plan</div>
+                        <div class="step-desc">Gemini identifies this as a daily plan request.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-bot">
+                    <div class="step-marker">
+                        <div class="step-num">3</div>
+                        <div class="step-component">Plan Mgr</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Read current state</div>
+                        <div class="step-desc">The Plan Manager reads your current progress — hours logged so far this week, remaining targets, upcoming deadlines, and recent momentum.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-gemini">
+                    <div class="step-marker">
+                        <div class="step-num">4</div>
+                        <div class="step-component">Gemini AI</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Generate optimized schedule</div>
+                        <div class="step-desc">Gemini uses your progress data and goals to generate an optimized daily schedule — prioritizing what matters most and balancing workload.</div>
+                    </div>
+                </div>
+
+                <div class="flow-step step-user">
+                    <div class="step-marker">
+                        <div class="step-num">5</div>
+                        <div class="step-component">You</div>
+                    </div>
+                    <div class="step-content">
+                        <div class="step-title">Receive your plan</div>
+                        <div class="step-desc">The AI-generated daily plan arrives in your Telegram chat, ready to follow.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     TECH STACK
+     ═══════════════════════════════════════════════════ -->
+<section class="section">
+    <div class="container">
+        <div class="section-label">Tech Stack</div>
+        <h2>Built with</h2>
+        <div class="tech-row">
+            <div class="tech-chip"><span class="tech-dot" style="background: #3776AB;"></span> Python 3.11+</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #26A5E4;"></span> python-telegram-bot</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #4285F4;"></span> Gemini 2.5 Flash</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #181717;"></span> GitHub API</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #003B57;"></span> SQLite</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #46E3B7;"></span> Render (Cloud)</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #F05032;"></span> Git (Sync)</div>
+            <div class="tech-chip"><span class="tech-dot" style="background: #FFD43B;"></span> Markdown Tables</div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════ -->
+<footer>
+    <div class="container">
+        Project Nudge · Architecture &amp; Flow Diagram · Built by Jaiadithya
+    </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════ -->
+<script>
+    // ── Flow Tab Switching ────────────────────────────
+    const flowTabs = document.querySelectorAll('.flow-tab');
+    const flowContainers = document.querySelectorAll('.flow-container');
+
+    flowTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.flow;
+
+            // Update tabs
+            flowTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            // Update containers
+            flowContainers.forEach(c => c.classList.remove('active'));
+            const targetContainer = document.getElementById(`flow-${target}`);
+            if (targetContainer) {
+                targetContainer.classList.add('active');
+                // Re-trigger animations
+                const steps = targetContainer.querySelectorAll('.flow-step');
+                steps.forEach(step => {
+                    step.style.animation = 'none';
+                    step.offsetHeight; // trigger reflow
+                    step.style.animation = '';
+                });
+            }
         });
-        window.addEventListener('resize', updateSVGDimensions);
-    </script>
+    });
+
+    // ── Intersection Observer for scroll animations ───
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe pipeline nodes and capability cards
+    document.querySelectorAll('.pipeline-node, .cap-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+        observer.observe(el);
+    });
+
+    // Stagger the pipeline nodes
+    document.querySelectorAll('.pipeline-node').forEach((node, i) => {
+        node.style.transitionDelay = `${i * 0.1}s`;
+    });
+
+    // Stagger the capability cards
+    document.querySelectorAll('.cap-card').forEach((card, i) => {
+        card.style.transitionDelay = `${i * 0.08}s`;
+    });
+</script>
 </body>
 </html>
